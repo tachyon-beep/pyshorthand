@@ -1,0 +1,5 @@
+# RFC Section 2.2: Dimension Variables
+# [M:DimensionExample] [Dims:N=batch,D=dim]
+
+x ∈ f32[N, D]@GPU
+y ∈ f32[N]@CPU

@@ -1,0 +1,10 @@
+# RFC Section 2.3: Entity Definitions
+# [M:EntityExample] [Role:Core]
+
+[C:Model]
+  weights ∈ f32[N, D]@GPU
+  bias ∈ f32[N]@GPU
+
+[C:Trainer]
+  model ∈ [Ref:Model]
+  lr ∈ f32@CPU
