@@ -65,6 +65,136 @@ class ContextPack:
             "total_entities": len(self.all_entities()),
         }
 
+    def to_mermaid(self, direction: str = "TB") -> str:
+        """Export context pack as Mermaid diagram.
+
+        Args:
+            direction: Graph direction (TB=top-bottom, LR=left-right, BT=bottom-top, RL=right-left)
+
+        Returns:
+            Mermaid diagram string ready for rendering
+
+        Example:
+            ```mermaid
+            graph TB
+                Target[Target]:::f0
+                A[EntityA]:::f1
+                B[EntityB]:::f1
+                C[EntityC]:::f2
+                Target --> A
+                Target --> B
+                A --> C
+                classDef f0 fill:#ff6b6b,stroke:#c92a2a,color:#fff
+                classDef f1 fill:#51cf66,stroke:#2f9e44,color:#000
+                classDef f2 fill:#74c0fc,stroke:#1971c2,color:#000
+            ```
+        """
+        lines = [f"graph {direction}"]
+
+        # Add nodes with styling
+        all_nodes = self.f0_core | self.f1_immediate | self.f2_extended
+
+        for node in sorted(all_nodes):
+            if node in self.f0_core:
+                lines.append(f"    {node}[{node}]:::f0")
+            elif node in self.f1_immediate:
+                lines.append(f"    {node}[{node}]:::f1")
+            elif node in self.f2_extended:
+                lines.append(f"    {node}[{node}]:::f2")
+
+        # Add class peers with different style
+        if self.class_peers:
+            for peer in sorted(self.class_peers):
+                if peer not in all_nodes:
+                    lines.append(f"    {peer}[{peer}]:::peer")
+
+        # Add edges (using stored entity relationships)
+        edges = set()
+
+        # Connect F0 to F1
+        for f1_entity in sorted(self.f1_immediate):
+            edges.add((self.target, f1_entity))
+
+        # Connect F1 to F2
+        for f2_entity in sorted(self.f2_extended):
+            # Find which F1 entity connects to this F2
+            for f1_entity in self.f1_immediate:
+                edges.add((f1_entity, f2_entity))
+
+        for src, dst in sorted(edges):
+            lines.append(f"    {src} --> {dst}")
+
+        # Add class definitions for styling
+        lines.append("")
+        lines.append("    classDef f0 fill:#ff6b6b,stroke:#c92a2a,color:#fff,stroke-width:3px")
+        lines.append("    classDef f1 fill:#51cf66,stroke:#2f9e44,color:#000,stroke-width:2px")
+        lines.append("    classDef f2 fill:#74c0fc,stroke:#1971c2,color:#000,stroke-width:1px")
+        lines.append("    classDef peer fill:#ffd43b,stroke:#f08c00,color:#000,stroke-width:1px,stroke-dasharray: 5 5")
+
+        return "\n".join(lines)
+
+    def to_graphviz(self) -> str:
+        """Export context pack as GraphViz DOT format.
+
+        Returns:
+            DOT format string for GraphViz rendering
+
+        Example:
+            digraph ContextPack {
+                rankdir=TB;
+                node [shape=box];
+
+                Target [style=filled, fillcolor="#ff6b6b", fontcolor=white];
+                EntityA [style=filled, fillcolor="#51cf66"];
+                EntityB [style=filled, fillcolor="#51cf66"];
+                EntityC [style=filled, fillcolor="#74c0fc"];
+
+                Target -> EntityA;
+                Target -> EntityB;
+                EntityA -> EntityC;
+            }
+        """
+        lines = ["digraph ContextPack {"]
+        lines.append("    rankdir=TB;")
+        lines.append("    node [shape=box];")
+        lines.append("")
+
+        # Define nodes with colors
+        all_nodes = self.f0_core | self.f1_immediate | self.f2_extended
+
+        for node in sorted(all_nodes):
+            if node in self.f0_core:
+                lines.append(f'    {node} [style=filled, fillcolor="#ff6b6b", fontcolor=white, penwidth=3];')
+            elif node in self.f1_immediate:
+                lines.append(f'    {node} [style=filled, fillcolor="#51cf66", penwidth=2];')
+            elif node in self.f2_extended:
+                lines.append(f'    {node} [style=filled, fillcolor="#74c0fc", penwidth=1];')
+
+        # Add class peers
+        if self.class_peers:
+            for peer in sorted(self.class_peers):
+                if peer not in all_nodes:
+                    lines.append(f'    {peer} [style="filled,dashed", fillcolor="#ffd43b"];')
+
+        lines.append("")
+
+        # Add edges
+        edges = set()
+
+        for f1_entity in sorted(self.f1_immediate):
+            edges.add((self.target, f1_entity))
+
+        for f2_entity in sorted(self.f2_extended):
+            for f1_entity in self.f1_immediate:
+                edges.add((f1_entity, f2_entity))
+
+        for src, dst in sorted(edges):
+            lines.append(f"    {src} -> {dst};")
+
+        lines.append("}")
+
+        return "\n".join(lines)
+
 
 class ContextPackGenerator:
     """Generates context packs for PyShorthand entities."""

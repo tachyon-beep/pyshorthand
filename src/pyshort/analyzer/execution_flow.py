@@ -98,6 +98,133 @@ class ExecutionFlow:
 
         return "\n".join(lines)
 
+    def to_mermaid(self, direction: str = "TB") -> str:
+        """Export execution flow as Mermaid diagram.
+
+        Args:
+            direction: Graph direction (TB=top-bottom, LR=left-right)
+
+        Returns:
+            Mermaid flowchart string ready for rendering
+
+        Example:
+            ```mermaid
+            graph TB
+                Step1[Main]:::depth0
+                Step2[Processor]:::depth1
+                Step3[Transformer]:::depth2
+                Step1 --> Step2
+                Step2 --> Step3
+                classDef depth0 fill:#ff6b6b,stroke:#c92a2a,color:#fff
+                classDef depth1 fill:#51cf66,stroke:#2f9e44,color:#000
+                classDef depth2 fill:#74c0fc,stroke:#1971c2,color:#000
+            ```
+        """
+        lines = [f"graph {direction}"]
+
+        # Track unique depth values for styling
+        depths = set()
+
+        # Add nodes with step numbers and depth-based styling
+        for i, step in enumerate(self.steps, 1):
+            depths.add(step.depth)
+            node_id = f"Step{i}"
+            label = step.entity_name
+            if step.calls_made:
+                call_list = ", ".join(step.calls_made[:2])  # Show first 2 calls
+                if len(step.calls_made) > 2:
+                    call_list += "..."
+                label += f"<br/>→ {call_list}"
+
+            lines.append(f"    {node_id}[\"{label}\"]:::depth{step.depth}")
+
+        lines.append("")
+
+        # Add edges showing execution flow
+        for i in range(len(self.steps) - 1):
+            src = f"Step{i+1}"
+            dst = f"Step{i+2}"
+            lines.append(f"    {src} --> {dst}")
+
+        # Add class definitions for each depth level
+        lines.append("")
+        colors = [
+            ("#ff6b6b", "#c92a2a", "#fff"),  # Red for depth 0
+            ("#51cf66", "#2f9e44", "#000"),  # Green for depth 1
+            ("#74c0fc", "#1971c2", "#000"),  # Blue for depth 2
+            ("#ffd43b", "#f08c00", "#000"),  # Yellow for depth 3
+            ("#da77f2", "#9c36b5", "#fff"),  # Purple for depth 4+
+        ]
+
+        for depth in sorted(depths):
+            color_idx = min(depth, len(colors) - 1)
+            fill, stroke, text = colors[color_idx]
+            lines.append(f"    classDef depth{depth} fill:{fill},stroke:{stroke},color:{text},stroke-width:2px")
+
+        return "\n".join(lines)
+
+    def to_graphviz(self) -> str:
+        """Export execution flow as GraphViz DOT format.
+
+        Returns:
+            DOT format string for GraphViz rendering
+
+        Example:
+            digraph ExecutionFlow {
+                rankdir=TB;
+                node [shape=box];
+
+                Step1 [label="Main", style=filled, fillcolor="#ff6b6b"];
+                Step2 [label="Processor", style=filled, fillcolor="#51cf66"];
+                Step3 [label="Transformer", style=filled, fillcolor="#74c0fc"];
+
+                Step1 -> Step2;
+                Step2 -> Step3;
+            }
+        """
+        lines = ["digraph ExecutionFlow {"]
+        lines.append("    rankdir=TB;")
+        lines.append("    node [shape=box];")
+        lines.append("")
+
+        # Color scheme based on depth
+        colors = [
+            ("#ff6b6b", "white"),  # Red for depth 0
+            ("#51cf66", "black"),  # Green for depth 1
+            ("#74c0fc", "black"),  # Blue for depth 2
+            ("#ffd43b", "black"),  # Yellow for depth 3
+            ("#da77f2", "white"),  # Purple for depth 4+
+        ]
+
+        # Add nodes with labels and depth-based colors
+        for i, step in enumerate(self.steps, 1):
+            node_id = f"Step{i}"
+            label = step.entity_name
+
+            # Add call info to label
+            if step.calls_made:
+                call_list = ", ".join(step.calls_made[:2])
+                if len(step.calls_made) > 2:
+                    call_list += "..."
+                label += f"\\n→ {call_list}"
+
+            color_idx = min(step.depth, len(colors) - 1)
+            fill, font = colors[color_idx]
+
+            lines.append(f'    {node_id} [label="{label}", style=filled, fillcolor="{fill}", fontcolor={font}, penwidth=2];')
+
+        lines.append("")
+
+        # Add edges showing execution flow
+        for i in range(len(self.steps) - 1):
+            src = f"Step{i+1}"
+            dst = f"Step{i+2}"
+            lines.append(f"    {src} -> {dst};")
+
+        lines.append("}")
+
+        return "\n".join(lines)
+
 
 class ExecutionFlowTracer:
     """Traces execution flow through PyShorthand code."""
