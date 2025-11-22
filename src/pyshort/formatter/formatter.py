@@ -205,6 +205,31 @@ class Formatter:
 
         return line
 
+    def _format_tags(self, tags: List) -> str:
+        """Format tags in v1.4 grouped order.
+
+        Order: [Decorators] [HTTP Routes] [Operations] [Complexity]
+
+        Args:
+            tags: List of Tag objects
+
+        Returns:
+            Formatted tag string
+        """
+        if not tags:
+            return ""
+
+        # Group tags by type
+        decorator_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "decorator"]
+        route_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "http_route"]
+        operation_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "operation"]
+        complexity_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "complexity"]
+        custom_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "custom"]
+
+        # Combine in order
+        ordered = decorator_tags + route_tags + operation_tags + complexity_tags + custom_tags
+        return " ".join(ordered) if ordered else ""
+
     def _format_function(self, func: Function, indent: int = 0) -> List[str]:
         """Format a function definition."""
         lines = []
@@ -220,11 +245,17 @@ class Formatter:
         if func.return_type:
             sig += f" → {func.return_type}"
 
-        # Add modifiers/tags
-        if func.modifiers or func.tags:
-            tags = [f"[{m}]" for m in func.modifiers]
-            tags.extend(str(t) for t in func.tags)
-            sig += " " + " ".join(tags)
+        # Add modifiers/tags (v1.4: grouped by type)
+        tag_parts = []
+        if func.modifiers:
+            tag_parts.extend([f"[{m}]" for m in func.modifiers])
+        if func.tags:
+            formatted_tags = self._format_tags(func.tags)
+            if formatted_tags:
+                tag_parts.append(formatted_tags)
+
+        if tag_parts:
+            sig += " " + " ".join(tag_parts)
 
         lines.append(sig)
 
@@ -288,20 +319,22 @@ class Formatter:
             return f"{indent_str}{prefix}⊳ {stmt.rhs}"
 
         if stmt.statement_type == "conditional":
-            tags_str = "".join(str(t) for t in stmt.tags)
+            tags_str = self._format_tags(stmt.tags)
             if stmt.condition:
-                return f"{indent_str}{prefix}?{stmt.condition} →{tags_str}"
+                return f"{indent_str}{prefix}?{stmt.condition} → {tags_str}" if tags_str else f"{indent_str}{prefix}?{stmt.condition}"
             return f"{indent_str}{prefix}?"
 
         if stmt.lhs and stmt.operator and stmt.rhs:
-            # Assignment or mutation
-            tags_str = "".join(f" →{t}" for t in stmt.tags)
-            return f"{indent_str}{prefix}{stmt.lhs} {stmt.operator} {stmt.rhs}{tags_str}"
+            # Assignment or mutation (v1.4: grouped tags)
+            tags_str = self._format_tags(stmt.tags)
+            tag_suffix = f" → {tags_str}" if tags_str else ""
+            return f"{indent_str}{prefix}{stmt.lhs} {stmt.operator} {stmt.rhs}{tag_suffix}"
 
         if stmt.operator == "!!" and stmt.rhs:
-            # System mutation
-            tags_str = "".join(f" →{t}" for t in stmt.tags)
-            return f"{indent_str}{prefix}!!{stmt.rhs}{tags_str}"
+            # System mutation (v1.4: grouped tags)
+            tags_str = self._format_tags(stmt.tags)
+            tag_suffix = f" → {tags_str}" if tags_str else ""
+            return f"{indent_str}{prefix}!!{stmt.rhs}{tag_suffix}"
 
         return ""
 
