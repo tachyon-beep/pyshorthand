@@ -104,6 +104,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
 .venv
 env/
 venv/
@@ -151,3 +152,10 @@ cython_debug/
 test_*.pys
 test_*.py
 debug_*.py
+
+# Test repositories (external clones for validation)
+test_repos/
+temp_repos/
+validation_repos/
+validation_report.json
+llm_comprehension_results.json
