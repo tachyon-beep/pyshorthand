@@ -37,6 +37,19 @@ from pyshort.core.symbols import ENTITY_PREFIXES, normalize_operator
 from pyshort.core.tokenizer import Token, TokenType, Tokenizer
 
 
+# Reserved keywords that cannot be used as identifiers
+RESERVED_KEYWORDS = {
+    # Python keywords
+    'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue',
+    'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from',
+    'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not',
+    'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
+    # PyShorthand reserved words
+    'C', 'F', 'D', 'I', 'M',  # Entity prefixes
+    'Ref', 'GPU', 'CPU', 'TPU',  # Common annotations
+}
+
+
 class ParseError(Exception):
     """Parse error with location information."""
 
@@ -92,6 +105,22 @@ class Parser:
                 self.current_token,
             )
         return self.advance()
+
+    def validate_identifier(self, name: str, token: Token) -> None:
+        """Validate that identifier is not a reserved keyword.
+
+        Args:
+            name: Identifier name to validate
+            token: Token for error reporting
+
+        Raises:
+            ParseError: If identifier is a reserved keyword
+        """
+        if name in RESERVED_KEYWORDS:
+            raise ParseError(
+                f"'{name}' is a reserved keyword and cannot be used as an identifier",
+                token
+            )
 
     def skip_newlines(self) -> None:
         """Skip any newline tokens."""
@@ -418,7 +447,11 @@ class Parser:
 
         Format: name ∈ Type[Shape]@Location
         """
-        name = self.expect(TokenType.IDENTIFIER).value
+        name_token = self.expect(TokenType.IDENTIFIER)
+        name = name_token.value
+
+        # Validate variable name
+        self.validate_identifier(name, name_token)
 
         type_spec = None
         if self.current_token.type == TokenType.MEMBER_OF:
@@ -588,14 +621,23 @@ class Parser:
         # Expect F:name
         self.expect(TokenType.IDENTIFIER)  # F
         self.expect(TokenType.COLON)
-        name = self.expect(TokenType.IDENTIFIER).value
+        name_token = self.expect(TokenType.IDENTIFIER)
+        name = name_token.value
+
+        # Validate function name
+        self.validate_identifier(name, name_token)
 
         # Parse parameters
         params = []
         if self.current_token.type == TokenType.LPAREN:
             self.advance()
             while self.current_token.type != TokenType.RPAREN:
-                param_name = self.expect(TokenType.IDENTIFIER).value
+                param_token = self.expect(TokenType.IDENTIFIER)
+                param_name = param_token.value
+
+                # Validate parameter name
+                self.validate_identifier(param_name, param_token)
+
                 type_spec = None
                 if self.current_token.type == TokenType.COLON:
                     self.advance()
@@ -809,7 +851,11 @@ class Parser:
         """Parse class definition."""
         self.expect(TokenType.IDENTIFIER)  # C
         self.expect(TokenType.COLON)
-        name = self.expect(TokenType.IDENTIFIER).value
+        name_token = self.expect(TokenType.IDENTIFIER)
+        name = name_token.value
+
+        # Validate class name
+        self.validate_identifier(name, name_token)
 
         # If using bracket syntax [C:Name], consume the closing ]
         if self.current_token.type == TokenType.RBRACKET:
