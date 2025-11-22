@@ -1,0 +1,4 @@
+# RFC Section 2.1: Basic Metadata
+# [M:SimpleModule] [Role:Core] [Risk:Low]
+
+x ∈ f32[N]@GPU

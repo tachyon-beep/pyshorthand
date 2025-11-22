@@ -1,0 +1,62 @@
+# [M:VectorizedHamletEnv] [ID:VHE] [Role:Core] [Layer:Domain] [Risk:High]
+# [Context: GPU-RL Simulation] [Dims: N=agents, M=meters, D=dim]
+
+[C:VHE]
+  ◊ [Ref:Substrate], [Ref:Dynamics], [Ref:Effects]
+
+  // 1. State Architecture
+  pos    ∈ f32[N, D]@GPU       // Physics State Vector
+  meters ∈ f32[N, M]@GPU       // Agent Internal Biological State
+  dones  ∈ bool[N]@GPU         // Lifecycle/Termination Flags
+  vfs    ∈ Map[Any]@CPU→GPU    // Shared Bus (Potential Transfer bottleneck)
+
+  // 2. Math-Heavy Reward Logic
+  F:calc_rewards(meters) → f32[N]@GPU
+    [Err] NaNError
+
+    intr  ← [Ref:Exploration].get() →[NN:Inf]
+    base  ≡ meters ⊗ weights →[Lin:Broad:O(N)]      // Vectorised weighted sum
+    total ≡ base + (intr * decay)
+
+    stats ≡ Σ total / N →[Lin]
+    !!log(stats) →[IO:Disk]                         // External logging side effect
+    ← total
+
+  // 3. Core Step Function
+  F:step(act:i64[N]@GPU) →[Iter:Hot]
+    ⏱16ms
+
+    ⊢ !dones.all()            // Precondition: cannot step finished episodes
+
+    {Phase: Actions ⏱6ms}
+      old_pos ≜ pos           // Deep clone for velocity calculation
+
+      ?custom →[Thresh:Mask] _apply_custom() → !pos
+
+      // Causal dependency: movement then velocity then bus update
+      ⊳ S.move(pos, act) →[Lin:Broad:O(N)] → !pos
+
+      ⊳ vel ≡ pos - old_pos →[Lin]
+      ⊳ VFS.set('vel', vel) →[Map] → !!vfs
+
+      ?interact →[Thresh:Mask:Sync:Atomic] _handle_interact() → !meters
+
+    {Phase: Dynamics ⏱4ms}
+      MM.deplete() →[Lin] → !meters
+      ⊳ MM.cascade() →[Thresh] → !meters                     // Non-linear threshold logic
+
+    {Phase: System Effects ⏱5ms}
+      IM.tick() →[Stoch] → !!spawn_items               // Allocation / new entities
+
+      FX.tick() →[Iter:Scan] → !meters                     // Sequential scan over effects
+
+    {Phase: Lifecycle}
+      dones |= MM.terminal() →[Thresh]
+
+      ⊳ ?steps > lim →[Thresh:Cond] → !dones
+
+    {Phase: IO}
+      obs ← _get_obs() →[Lin:O(N*ObsDim)]
+      rew ← DE.calc() →[Heur]
+
+    ← obs, rew, dones, info
