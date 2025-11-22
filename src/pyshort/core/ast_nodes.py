@@ -11,6 +11,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
+# Import symbols for tag validation
+from pyshort.core.symbols import (
+    DECORATOR_TAGS,
+    HTTP_METHODS,
+    is_complexity_tag,
+    is_decorator_tag,
+    is_http_method,
+    parse_http_route,
+)
+
 
 # ============================================================================
 # Diagnostic and Error Reporting
@@ -125,20 +135,75 @@ class TypeSpec:
 
 @dataclass(frozen=True)
 class Tag:
-    """Computational tag with qualifiers."""
+    """Computational tag with qualifiers.
 
-    base: str  # Lin, Iter, IO, NN, Thresh, Map, Stoch, Sync, Heur
+    Supports v1.4 tag types:
+    - operation: [Lin:MatMul], [Iter:Hot], [NN:∇]
+    - complexity: [O(N)], [O(N*M)]
+    - decorator: [Prop], [Static], [Cached]
+    - http_route: [GET /path], [POST /api/users/{id}]
+    - custom: User-defined tags
+    """
+
+    base: str  # Tag base (Lin, Prop, GET, O(N), etc.)
     qualifiers: List[str] = field(default_factory=list)  # O(N), Async, Hot, etc.
+    tag_type: Literal["operation", "complexity", "decorator", "http_route", "custom"] = "operation"
+    http_method: Optional[str] = None  # For HTTP route tags (GET, POST, etc.)
+    http_path: Optional[str] = None  # For HTTP route tags (/path, /api/users/{id})
+
+    def __post_init__(self) -> None:
+        """Validate tag structure based on tag_type."""
+        # Note: We can't modify frozen dataclass, but we can validate
+        if self.tag_type == "http_route":
+            if not self.http_method or not self.http_path:
+                raise ValueError(
+                    f"HTTP route tag must have both http_method and http_path: {self.base}"
+                )
+            if self.http_method not in HTTP_METHODS:
+                raise ValueError(f"Invalid HTTP method: {self.http_method}")
+            if not self.http_path.startswith("/"):
+                raise ValueError(f"HTTP path must start with '/': {self.http_path}")
+
+        if self.tag_type == "complexity":
+            if not is_complexity_tag(self.base):
+                raise ValueError(f"Invalid complexity notation: {self.base}")
+
+        if self.tag_type == "decorator":
+            base_tag = self.base.split(":")[0] if ":" in self.base else self.base
+            if base_tag not in DECORATOR_TAGS:
+                # Allow custom decorator tags, just warn via type
+                object.__setattr__(self, "tag_type", "custom")
 
     def __str__(self) -> str:
-        """Format as [Tag:Qual1:Qual2]."""
-        if self.qualifiers:
-            return f"[{self.base}:{':'.join(self.qualifiers)}]"
-        return f"[{self.base}]"
+        """Format based on tag type."""
+        if self.tag_type == "http_route":
+            # [GET /path] or [POST /api/users/{id}]
+            return f"[{self.http_method} {self.http_path}]"
+
+        elif self.tag_type == "complexity":
+            # [O(N)] or [O(N*M*D)]
+            return f"[{self.base}]"
+
+        elif self.tag_type == "decorator" or self.tag_type == "custom":
+            # [Prop], [Cached:TTL:60], [Static]
+            if self.qualifiers:
+                return f"[{self.base}:{':'.join(self.qualifiers)}]"
+            return f"[{self.base}]"
+
+        else:  # operation
+            # [Lin:MatMul], [Iter:Hot:O(N)]
+            if self.qualifiers:
+                return f"[{self.base}:{':'.join(self.qualifiers)}]"
+            return f"[{self.base}]"
 
     @property
     def complexity(self) -> Optional[str]:
         """Extract complexity qualifier if present."""
+        # Check if this IS a complexity tag
+        if self.tag_type == "complexity":
+            return self.base
+
+        # Or if complexity is in qualifiers
         for q in self.qualifiers:
             if q.startswith("O("):
                 return q
@@ -153,6 +218,26 @@ class Tag:
     def is_sync(self) -> bool:
         """Check if this is a synchronization point."""
         return self.base == "Sync"
+
+    @property
+    def is_operation(self) -> bool:
+        """Check if this is an operation tag."""
+        return self.tag_type == "operation"
+
+    @property
+    def is_complexity(self) -> bool:
+        """Check if this is a complexity tag."""
+        return self.tag_type == "complexity"
+
+    @property
+    def is_decorator(self) -> bool:
+        """Check if this is a decorator tag."""
+        return self.tag_type == "decorator"
+
+    @property
+    def is_http_route(self) -> bool:
+        """Check if this is an HTTP route tag."""
+        return self.tag_type == "http_route"
 
 
 # ============================================================================
