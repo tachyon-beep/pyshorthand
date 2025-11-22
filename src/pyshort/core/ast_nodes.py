@@ -249,6 +249,67 @@ class TensorOp(Expression):
         return f"⊗({', '.join(str(op) for op in self.operands)})"
 
 
+@dataclass(frozen=True)
+class UnaryOp(Expression):
+    """Unary operation: -x, +x, !x."""
+
+    operator: str  # -, +, !
+    operand: Expression
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "unary_op",
+            "operator": self.operator,
+            "operand": self.operand.to_dict(),
+        }
+
+    def __str__(self) -> str:
+        return f"{self.operator}{self.operand}"
+
+
+@dataclass(frozen=True)
+class IndexOp(Expression):
+    """Array/tensor indexing operation: base[i, j, k]."""
+
+    base: Expression
+    indices: List[Expression]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "index_op",
+            "base": self.base.to_dict(),
+            "indices": [idx.to_dict() for idx in self.indices],
+        }
+
+    def __str__(self) -> str:
+        indices_str = ", ".join(str(idx) for idx in self.indices)
+        return f"{self.base}[{indices_str}]"
+
+
+@dataclass(frozen=True)
+class AttributeAccess(Expression):
+    """Attribute access or method call: base.attr or base.method()."""
+
+    base: Expression
+    attribute: str
+    call: Optional['FunctionCall'] = None  # If it's a method call
+
+    def to_dict(self) -> Dict[str, Any]:
+        result = {
+            "type": "attribute_access",
+            "base": self.base.to_dict(),
+            "attribute": self.attribute,
+        }
+        if self.call:
+            result["call"] = self.call.to_dict()
+        return result
+
+    def __str__(self) -> str:
+        if self.call:
+            return f"{self.base}.{self.call}"
+        return f"{self.base}.{self.attribute}"
+
+
 # ============================================================================
 # Statements
 # ============================================================================

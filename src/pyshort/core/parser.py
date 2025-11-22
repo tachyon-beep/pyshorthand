@@ -8,6 +8,7 @@ import re
 from typing import List, Optional, Tuple
 
 from pyshort.core.ast_nodes import (
+    AttributeAccess,
     BinaryOp,
     Class,
     Data,
@@ -17,6 +18,7 @@ from pyshort.core.ast_nodes import (
     Function,
     FunctionCall,
     Identifier,
+    IndexOp,
     Interface,
     Literal,
     Metadata,
@@ -29,6 +31,7 @@ from pyshort.core.ast_nodes import (
     Tag,
     TensorOp,
     TypeSpec,
+    UnaryOp,
 )
 from pyshort.core.symbols import ENTITY_PREFIXES, normalize_operator
 from pyshort.core.tokenizer import Token, TokenType, Tokenizer
@@ -163,7 +166,18 @@ class Parser:
         """Parse type specification.
 
         Format: Type[Shape]@Location or Type[Shape]@Loc1→Loc2
+        Or: [Ref:Name] for references
         """
+        # Handle reference types: [Ref:Name]
+        if self.current_token.type == TokenType.LBRACKET:
+            # Could be a reference or a shape on a type without explicit base
+            next_tok = self.peek()
+            if next_tok and next_tok.type == TokenType.IDENTIFIER and next_tok.value == "Ref":
+                # This is a reference type: [Ref:Name]
+                # Skip the entire reference as the "type"
+                ref_str = self.parse_reference_string()
+                return TypeSpec(base_type=ref_str, shape=None, location=None, transfer=None)
+
         base_type = self.expect(TokenType.IDENTIFIER).value
 
         shape = None
@@ -185,6 +199,19 @@ class Parser:
                 location = loc1
 
         return TypeSpec(base_type=base_type, shape=shape, location=location, transfer=transfer)
+
+    def parse_reference_string(self) -> str:
+        """Parse a reference and return it as a string: [Ref:Name] → 'Ref:Name'."""
+        self.expect(TokenType.LBRACKET)
+        ref_parts = []
+        while self.current_token.type != TokenType.RBRACKET:
+            if self.current_token.type in (TokenType.IDENTIFIER, TokenType.COLON):
+                ref_parts.append(self.current_token.value)
+                self.advance()
+            else:
+                self.advance()  # Skip other tokens
+        self.expect(TokenType.RBRACKET)
+        return "".join(ref_parts)
 
     def parse_shape(self) -> List[str]:
         """Parse shape specification [N, C, H, W]."""
@@ -255,6 +282,7 @@ class Parser:
             TokenType.MINUS,
             TokenType.STAR,
             TokenType.SLASH,
+            TokenType.AT,  # Matrix multiplication (@)
             TokenType.TENSOR_OP,
             TokenType.CARET,
             TokenType.GT,
@@ -271,7 +299,36 @@ class Parser:
         return left
 
     def parse_primary_expr(self) -> Expression:
-        """Parse primary expression (identifier, literal, function call, etc.)."""
+        """Parse primary expression with postfix operators (indexing, attribute access, calls)."""
+        # Parse base expression
+        base_expr = self._parse_base_expr()
+
+        # Handle postfix operators: indexing, attribute access, method calls
+        while True:
+            if self.current_token.type == TokenType.LBRACKET:
+                # Array indexing: expr[i, j, k]
+                base_expr = self._parse_indexing(base_expr)
+            elif self.current_token.type == TokenType.DOT:
+                # Attribute access or method call: expr.attr or expr.method()
+                base_expr = self._parse_attribute_access(base_expr)
+            elif self.current_token.type == TokenType.LPAREN and isinstance(base_expr, Identifier):
+                # Function call: name(args)
+                base_expr = self.parse_function_call(base_expr.name)
+            else:
+                # No more postfix operators
+                break
+
+        return base_expr
+
+    def _parse_base_expr(self) -> Expression:
+        """Parse base expression (number, string, identifier, parenthesized expr, unary ops)."""
+        # Unary operators: -, +
+        if self.current_token.type in (TokenType.MINUS, TokenType.PLUS):
+            op = self.current_token.value
+            self.advance()
+            operand = self._parse_base_expr()  # Recursively parse operand
+            return UnaryOp(operator=op, operand=operand)
+
         # Number literal
         if self.current_token.type == TokenType.NUMBER:
             value = self.current_token.value
@@ -284,16 +341,10 @@ class Parser:
             self.advance()
             return Literal(value=value)
 
-        # Identifier or function call
+        # Identifier
         if self.current_token.type == TokenType.IDENTIFIER:
             name = self.current_token.value
             self.advance()
-
-            # Function call
-            if self.current_token.type == TokenType.LPAREN:
-                return self.parse_function_call(name)
-
-            # Just an identifier
             return Identifier(name=name)
 
         # Parenthesized expression
@@ -305,6 +356,37 @@ class Parser:
 
         raise ParseError(f"Unexpected token in expression: {self.current_token.value}",
                         self.current_token)
+
+    def _parse_indexing(self, base: Expression) -> Expression:
+        """Parse array indexing: base[i, j, k]."""
+        self.expect(TokenType.LBRACKET)
+        indices = []
+
+        while self.current_token.type != TokenType.RBRACKET:
+            indices.append(self.parse_expression())
+            if self.current_token.type == TokenType.COMMA:
+                self.advance()
+            elif self.current_token.type != TokenType.RBRACKET:
+                break
+
+        self.expect(TokenType.RBRACKET)
+
+        # Return IndexOp expression
+        return IndexOp(base=base, indices=indices)
+
+    def _parse_attribute_access(self, base: Expression) -> Expression:
+        """Parse attribute access: base.attr or base.method()."""
+        self.expect(TokenType.DOT)
+        attr_name = self.expect(TokenType.IDENTIFIER).value
+
+        # Check if it's a method call
+        if self.current_token.type == TokenType.LPAREN:
+            method_call = self.parse_function_call(attr_name)
+            # Convert to AttributeAccess with method call
+            return AttributeAccess(base=base, attribute=attr_name, call=method_call)
+        else:
+            # Just attribute access
+            return AttributeAccess(base=base, attribute=attr_name, call=None)
 
     def parse_function_call(self, name: str) -> FunctionCall:
         """Parse function call."""
