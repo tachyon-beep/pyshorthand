@@ -307,6 +307,98 @@ graph TD
 
 **Impact**: Transforms PyShorthand from a single-file tool into a complete codebase analysis platform!
 
+### Enhanced Decompiler (py2short v2.0) ✅
+
+**Date**: November 22, 2025
+
+Massively upgraded the decompiler to handle real-world codebases with modern Python patterns!
+
+#### New Capabilities:
+1. **Dependency extraction** - Generates `◊ [Ref:...]` from imports and base classes
+   - Local class references: `[Ref:Encoder]`
+   - Framework dependencies: `[Ref:PyTorch]`, `[Ref:FastAPI]`
+   - Tracks import aliases and resolves paths
+
+2. **Web framework recognition** - Detects and annotates web patterns
+   - **FastAPI**: Extracts routes (`[GET /users]`, `[POST /users]`)
+   - **Flask**: Detects `@app.route()` decorators
+   - **Django REST**: Recognizes `APIView`, `ViewSet`
+
+3. **Dataclass & Pydantic support**
+   - Detects `@dataclass` decorator
+   - Recognizes Pydantic `BaseModel` inheritance
+   - Extracts default values: `learning_rate ∈ f32  # default: 0.001`
+   - Handles `Optional[T]` types: `age ∈ i32?`
+
+4. **Docstring metadata extraction**
+   - Parses `Role:`, `Risk:`, `Layer:` tags from docstrings
+   - Applies to module-level metadata
+   - Future: `:O(N)` complexity annotations
+
+5. **Enhanced type inference**
+   - Local class instantiation: `self.encoder = Encoder()` → `encoder ∈ [Ref:Encoder]`
+   - Optional types: `Optional[int]` → `i32?`
+   - PyTorch components: Better recognition of layers
+   - Function parameters: Preserves type hints with references
+
+#### Example Transformation:
+
+**Before (original)**:
+```
+[C:Transformer]
+  encoder ∈ Unknown
+  config ∈ Unknown
+```
+
+**After (enhanced)**:
+```
+[C:Config] # @dataclass
+  learning_rate ∈ f32  # default: 0.001
+
+[C:Encoder]
+  ◊ [Ref:PyTorch]
+  linear ∈ Linear
+
+[C:Transformer]
+  ◊ [Ref:PyTorch]
+  encoder ∈ [Ref:Encoder]
+  config ∈ [Ref:Config]
+
+  # Methods:
+  # F:__init__(config: [Ref:Config]) → Unknown
+  # F:forward(x: f32[N]@GPU) → f32[N]@GPU
+```
+
+#### Real-World Impact:
+
+**FastAPI Microservice**:
+```
+[C:UserCreate] # Pydantic
+  ◊ [Ref:Pydantic]
+  email ∈ str
+  age ∈ i32?  # default: None
+
+[C:UserAPI]
+  # F:create_user(user: [Ref:UserCreate]) → Unknown [POST /users]
+  # F:get_user(user_id: i32) → Unknown [GET /users/{user_id}]
+```
+
+**PyTorch Model**:
+```
+[C:MultiHeadAttention]
+  ◊ [Ref:PyTorch]
+  q_proj ∈ Linear
+  k_proj ∈ Linear
+  v_proj ∈ Linear
+
+[C:TransformerBlock]
+  ◊ [Ref:PyTorch]
+  attention ∈ [Ref:MultiHeadAttention]
+  norm ∈ Norm
+```
+
+**Impact**: The decompiler now produces **production-quality** specs from real codebases with minimal "Unknown" types!
+
 ## Completed Deliverables ✅
 
 ### Phase 1: Core Infrastructure
