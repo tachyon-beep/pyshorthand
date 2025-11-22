@@ -10,12 +10,17 @@ from typing import Iterator, List
 from pyshort.core.ast_nodes import Diagnostic, DiagnosticSeverity, PyShortAST, Statement
 from pyshort.core.enhanced_errors import suggest_did_you_mean
 from pyshort.core.symbols import (
+    DECORATOR_TAGS,
+    HTTP_METHODS,
     VALID_LAYERS,
     VALID_LOCATIONS,
     VALID_RISK_LEVELS,
     VALID_ROLES,
     VALID_TAG_BASES,
     VALID_TYPES,
+    is_complexity_tag,
+    is_decorator_tag,
+    is_http_method,
 )
 
 
@@ -144,20 +149,243 @@ class DimensionConsistencyRule(Rule):
 
 
 class ValidTagsRule(Rule):
-    """Ensure all tags use valid base types."""
+    """Ensure all tags use valid base types (v1.4 compatible)."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
-        """Check tag validity."""
+        """Check tag validity for both v1.3 and v1.4 tags."""
+        # Check statement tags
         for stmt in ast.statements:
-            for tag in stmt.tags:
-                if tag.base not in VALID_TAG_BASES:
+            yield from self._check_tags(stmt.tags, stmt.line)
+
+        # Check function tags
+        for func in ast.functions:
+            yield from self._check_tags(func.tags, func.line)
+
+        # Check class method tags
+        for entity in ast.entities:
+            if hasattr(entity, "methods"):
+                for method in entity.methods:  # type: ignore
+                    yield from self._check_tags(method.tags, method.line)
+
+    def _check_tags(self, tags: List, line: int) -> Iterator[Diagnostic]:
+        """Check individual tags."""
+        from pyshort.core.ast_nodes import Tag
+
+        for tag in tags:
+            # v1.4 tag types don't need to match VALID_TAG_BASES
+            if tag.tag_type in ("complexity", "decorator", "http_route", "custom"):
+                continue
+
+            # v1.3 operation tags must match VALID_TAG_BASES
+            if tag.tag_type == "operation" and tag.base not in VALID_TAG_BASES:
+                yield Diagnostic(
+                    severity=DiagnosticSeverity.ERROR,
+                    line=line,
+                    column=1,
+                    message=f"Invalid operation tag base: {tag.base}. Must be one of: {', '.join(VALID_TAG_BASES)}",
+                    suggestion=f"Use one of: {', '.join(VALID_TAG_BASES)}",
+                    code="E010",
+                )
+
+
+class ComplexityTagValidator(Rule):
+    """Validate v1.4 complexity tag notation."""
+
+    def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
+        """Check complexity tags for valid O(...) notation."""
+        import re
+
+        # Check statement tags
+        for stmt in ast.statements:
+            yield from self._check_complexity_tags(stmt.tags, stmt.line)
+
+        # Check function tags
+        for func in ast.functions:
+            yield from self._check_complexity_tags(func.tags, func.line)
+
+        # Check class method tags
+        for entity in ast.entities:
+            if hasattr(entity, "methods"):
+                for method in entity.methods:  # type: ignore
+                    yield from self._check_complexity_tags(method.tags, method.line)
+
+    def _check_complexity_tags(self, tags: List, line: int) -> Iterator[Diagnostic]:
+        """Validate individual complexity tags."""
+        from pyshort.core.ast_nodes import Tag
+
+        for tag in tags:
+            if tag.tag_type != "complexity":
+                continue
+
+            # Validate O(...) syntax
+            if not re.match(r'^O\(.+\)$', tag.base):
+                yield Diagnostic(
+                    severity=DiagnosticSeverity.ERROR,
+                    line=line,
+                    column=1,
+                    message=f"Invalid complexity notation: {tag.base}",
+                    suggestion="Use O(...) notation, e.g., [O(N)], [O(N*M)], [O(N²)]",
+                    code="E301",
+                )
+                continue
+
+            # Extract complexity variables (e.g., N, M, D, B)
+            content = tag.base[2:-1]  # Remove "O(" and ")"
+
+            # Warn on unusual/suspicious complexity
+            if "^10" in content or "^100" in content:
+                yield Diagnostic(
+                    severity=DiagnosticSeverity.WARNING,
+                    line=line,
+                    column=1,
+                    message=f"Unusually high complexity: {tag.base}",
+                    suggestion="Review if this complexity is intentional",
+                    code="W301",
+                )
+
+
+class DecoratorTagValidator(Rule):
+    """Validate v1.4 decorator tags."""
+
+    def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
+        """Check decorator tags for conflicts and validity."""
+        # Check function tags
+        for func in ast.functions:
+            yield from self._check_decorator_tags(func.tags, func.line, func.name)
+
+        # Check class method tags
+        for entity in ast.entities:
+            if hasattr(entity, "methods"):
+                for method in entity.methods:  # type: ignore
+                    yield from self._check_decorator_tags(method.tags, method.line, method.name)
+
+    def _check_decorator_tags(self, tags: List, line: int, func_name: str) -> Iterator[Diagnostic]:
+        """Validate decorator tags for a function."""
+        from pyshort.core.ast_nodes import Tag
+
+        decorator_tags = [tag for tag in tags if tag.tag_type == "decorator"]
+
+        # Check for conflicting decorators
+        has_prop = any(tag.base == "Prop" for tag in decorator_tags)
+        has_static = any(tag.base == "Static" for tag in decorator_tags)
+        has_class = any(tag.base == "Class" for tag in decorator_tags)
+
+        if has_prop and has_static:
+            yield Diagnostic(
+                severity=DiagnosticSeverity.ERROR,
+                line=line,
+                column=1,
+                message=f"Function {func_name} has conflicting decorators: [Prop] and [Static]",
+                suggestion="A function cannot be both @property and @staticmethod",
+                code="E302",
+            )
+
+        if has_prop and has_class:
+            yield Diagnostic(
+                severity=DiagnosticSeverity.ERROR,
+                line=line,
+                column=1,
+                message=f"Function {func_name} has conflicting decorators: [Prop] and [Class]",
+                suggestion="A function cannot be both @property and @classmethod",
+                code="E303",
+            )
+
+        # Validate decorator arguments (e.g., RateLimit:100)
+        for tag in decorator_tags:
+            if tag.base == "RateLimit" and tag.qualifiers:
+                try:
+                    limit = int(tag.qualifiers[0])
+                    if limit <= 0:
+                        yield Diagnostic(
+                            severity=DiagnosticSeverity.ERROR,
+                            line=line,
+                            column=1,
+                            message=f"Invalid rate limit: {limit} (must be positive)",
+                            suggestion="Use [RateLimit:N] where N > 0",
+                            code="E304",
+                        )
+                except ValueError:
                     yield Diagnostic(
                         severity=DiagnosticSeverity.ERROR,
-                        line=stmt.line,
+                        line=line,
                         column=1,
-                        message=f"Invalid tag base: {tag.base}. Must be one of: {', '.join(VALID_TAG_BASES)}",
-                        suggestion=f"Use one of: {', '.join(VALID_TAG_BASES)}",
+                        message=f"Invalid rate limit value: {tag.qualifiers[0]}",
+                        suggestion="Rate limit must be a number, e.g., [RateLimit:100]",
+                        code="E305",
                     )
+
+
+class HTTPRouteValidator(Rule):
+    """Validate v1.4 HTTP route tags."""
+
+    def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
+        """Check HTTP route tags for validity."""
+        # Check function tags
+        for func in ast.functions:
+            yield from self._check_route_tags(func.tags, func.line, func.name)
+
+        # Check class method tags
+        for entity in ast.entities:
+            if hasattr(entity, "methods"):
+                for method in entity.methods:  # type: ignore
+                    yield from self._check_route_tags(method.tags, method.line, method.name)
+
+    def _check_route_tags(self, tags: List, line: int, func_name: str) -> Iterator[Diagnostic]:
+        """Validate HTTP route tags."""
+        from pyshort.core.ast_nodes import Tag
+
+        route_tags = [tag for tag in tags if tag.tag_type == "http_route"]
+
+        # Check for multiple route tags (usually a mistake)
+        if len(route_tags) > 1:
+            methods = [tag.http_method for tag in route_tags]
+            yield Diagnostic(
+                severity=DiagnosticSeverity.WARNING,
+                line=line,
+                column=1,
+                message=f"Function {func_name} has multiple HTTP route tags: {', '.join(methods)}",
+                suggestion="Consider if multiple routes are intentional",
+                code="W306",
+            )
+
+        for tag in route_tags:
+            # Validate HTTP method
+            if tag.http_method not in HTTP_METHODS:
+                yield Diagnostic(
+                    severity=DiagnosticSeverity.ERROR,
+                    line=line,
+                    column=1,
+                    message=f"Invalid HTTP method: {tag.http_method}",
+                    suggestion=f"Use one of: {', '.join(HTTP_METHODS)}",
+                    code="E306",
+                )
+
+            # Validate path starts with /
+            if tag.http_path and not tag.http_path.startswith("/"):
+                yield Diagnostic(
+                    severity=DiagnosticSeverity.ERROR,
+                    line=line,
+                    column=1,
+                    message=f"HTTP path must start with '/': {tag.http_path}",
+                    suggestion=f"Change to: [GET /{tag.http_path}]" if tag.http_path else "Use absolute path starting with '/'",
+                    code="E307",
+                )
+
+            # Validate parameter syntax {param_name}
+            if tag.http_path and "{" in tag.http_path:
+                import re
+                # Check for valid parameter names
+                params = re.findall(r'\{([^}]+)\}', tag.http_path)
+                for param in params:
+                    if not param.isidentifier():
+                        yield Diagnostic(
+                            severity=DiagnosticSeverity.WARNING,
+                            line=line,
+                            column=1,
+                            message=f"Invalid parameter name in route: {{{param}}}",
+                            suggestion="Use valid Python identifiers for route parameters",
+                            code="W307",
+                        )
 
 
 class SystemMutationSafetyRule(Rule):
@@ -292,6 +520,9 @@ class Linter:
             ValidMetadataValuesRule(),
             DimensionConsistencyRule(),
             ValidTagsRule(),
+            ComplexityTagValidator(),  # v1.4
+            DecoratorTagValidator(),  # v1.4
+            HTTPRouteValidator(),  # v1.4
             SystemMutationSafetyRule(),
             CriticalOperationTaggingRule(),
             LocationInferenceRule(),
