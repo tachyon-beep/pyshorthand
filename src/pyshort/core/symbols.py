@@ -112,51 +112,106 @@ VALID_TAG_BASES: Set[str] = {
     "Heur",  # Heuristic/business logic
 }
 
-# Common qualifiers
+# Common qualifiers (v1.4 - expanded)
 COMMON_QUALIFIERS: Set[str] = {
-    # Complexity
+    # Complexity (extended in v1.4)
     "O(1)",
+    "O(log N)",
     "O(N)",
-    "O(N^2)",
-    "O(N*M)",
     "O(N log N)",
+    "O(N^2)",
+    "O(N²)",  # Unicode variant
+    "O(N^3)",
+    "O(N³)",  # Unicode variant
+    "O(N*M)",
+    "O(N*M*D)",
+    "O(B*N*M)",
+    "O(B*N*D)",
+    "O(B*N²*D)",  # Attention complexity
+    "O(2^N)",  # Exponential
     "O(P)",
     "Amortized",
     # Linear ops
     "Broad",
     "MatMul",
+    "Reduce",
+    "Transpose",
     # Iteration
     "Hot",
     "Scan",
     "Sequential",
     "Random",
     "Strided",
-    # Thresholding
+    # Thresholding (expanded)
     "Mask",
     "Cond",
     "Clamp",
+    "Softmax",
+    "ReLU",
+    "GELU",
+    "Sigmoid",
+    "Tanh",
     # Mapping
     "Hash",
     "Cache",
     # Stochastic
     "Seed",
     "Dist",
-    # IO
+    # IO (expanded)
     "Net",
     "Disk",
     "Async",
     "Block",
+    "Stream",
     # Sync
     "Lock",
     "Atomic",
     "Barrier",
     "Await",
-    # NN
+    # NN (expanded)
     "∇",
+    "Grad",
     "Inf",
+    "Train",
     # Parallel
     "||",
 }
+
+# Decorator tags (v1.4 new)
+DECORATOR_TAGS: Set[str] = {
+    # Standard Python decorators
+    "Prop",       # @property
+    "Setter",     # @name.setter
+    "Deleter",    # @name.deleter
+    "Cached",     # @cached_property or @lru_cache
+    "Static",     # @staticmethod
+    "Class",      # @classmethod
+    "Abstract",   # @abstractmethod
+    # Common framework decorators
+    "Auth",       # Authentication required
+    "Retry",      # Retry decorator
+    "Timeout",    # Timeout decorator
+    "RateLimit",  # Rate limiting
+}
+
+# HTTP method tags (v1.4 new)
+HTTP_METHODS: Set[str] = {
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+    "HEAD",
+}
+
+# All valid tag components (combined)
+ALL_TAG_COMPONENTS: Set[str] = (
+    VALID_TAG_BASES |
+    COMMON_QUALIFIERS |
+    DECORATOR_TAGS |
+    HTTP_METHODS
+)
 
 # Valid type names (from RFC Section 3.3)
 VALID_TYPES: Set[str] = {
@@ -319,3 +374,128 @@ def is_valid_location(location: str) -> bool:
         True if valid, False otherwise
     """
     return location in VALID_LOCATIONS
+
+
+def is_decorator_tag(tag: str) -> bool:
+    """Check if a tag is a decorator tag.
+
+    Args:
+        tag: Tag name
+
+    Returns:
+        True if it's a decorator tag, False otherwise
+
+    Examples:
+        >>> is_decorator_tag("Prop")
+        True
+        >>> is_decorator_tag("Static")
+        True
+        >>> is_decorator_tag("Lin")
+        False
+    """
+    return tag in DECORATOR_TAGS
+
+
+def is_http_method(tag: str) -> bool:
+    """Check if a tag is an HTTP method.
+
+    Args:
+        tag: Tag name
+
+    Returns:
+        True if it's an HTTP method, False otherwise
+
+    Examples:
+        >>> is_http_method("GET")
+        True
+        >>> is_http_method("POST")
+        True
+        >>> is_http_method("Prop")
+        False
+    """
+    return tag in HTTP_METHODS
+
+
+def is_complexity_tag(tag: str) -> bool:
+    """Check if a tag represents computational complexity.
+
+    Args:
+        tag: Tag string
+
+    Returns:
+        True if it's a complexity tag, False otherwise
+
+    Examples:
+        >>> is_complexity_tag("O(N)")
+        True
+        >>> is_complexity_tag("O(N*M)")
+        True
+        >>> is_complexity_tag("Lin")
+        False
+    """
+    import re
+    return bool(re.match(r'^O\(.+\)$', tag))
+
+
+def parse_http_route(tag_string: str) -> tuple[str, str] | None:
+    """Parse an HTTP route tag.
+
+    Args:
+        tag_string: Tag string like "GET /users/{id}"
+
+    Returns:
+        Tuple of (method, path) or None if not a valid route
+
+    Examples:
+        >>> parse_http_route("GET /users")
+        ('GET', '/users')
+        >>> parse_http_route("POST /api/users/{id}")
+        ('POST', '/api/users/{id}')
+        >>> parse_http_route("Invalid")
+        None
+    """
+    parts = tag_string.split(None, 1)
+    if len(parts) == 2:
+        method, path = parts
+        if method in HTTP_METHODS and path.startswith('/'):
+            return (method, path)
+    return None
+
+
+def is_valid_tag_component(component: str) -> bool:
+    """Check if a component is a valid tag component.
+
+    Args:
+        component: Tag component string
+
+    Returns:
+        True if valid, False otherwise
+
+    Examples:
+        >>> is_valid_tag_component("Lin")
+        True
+        >>> is_valid_tag_component("Prop")
+        True
+        >>> is_valid_tag_component("O(N)")
+        True
+        >>> is_valid_tag_component("InvalidTag")
+        False
+    """
+    # Check if it's a known component
+    if component in ALL_TAG_COMPONENTS:
+        return True
+
+    # Check if it's a complexity tag
+    if is_complexity_tag(component):
+        return True
+
+    # Check if it's an HTTP route
+    if parse_http_route(component):
+        return True
+
+    # Allow custom decorator names (alphanumeric + colon for args)
+    import re
+    if re.match(r'^[A-Z][a-zA-Z0-9_]*(:[a-zA-Z0-9_,]+)?$', component):
+        return True
+
+    return False
