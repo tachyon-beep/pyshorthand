@@ -10,10 +10,10 @@
 | Severity | Total | Fixed | Remaining | % Complete |
 |----------|-------|-------|-----------|------------|
 | **Critical** | 16 | 16 | 0 | **100%** ✅ |
-| **High** | 23 | 14 | 9 | **61%** 🔄 |
+| **High** | 23 | 17 | 6 | **74%** 🔄 |
 | **Medium** | 23 | 0 | 23 | **0%** ⏳ |
 | **Low** | 14 | 0 | 14 | **0%** ⏳ |
-| **TOTAL** | **76** | **30** | **46** | **39%** |
+| **TOTAL** | **76** | **33** | **43** | **43%** |
 
 ---
 
@@ -69,19 +69,19 @@
 ### Batch 3: Parser Multi-Entity ✅ COMPLETE (1/1)
 - ✅ **P10**: Multi-entity parsing - Already working (has while loop)
 
-### Batch 4: Parser Validation 🔄 IN PROGRESS (6/13)
+### Batch 4: Parser Validation 🔄 IN PROGRESS (10/13)
 - ✅ **P14**: Identifier validation - Reserved keywords checked
-- ✅ **P18**: Escape sequence validation - Warnings for unsupported escapes
-- ✅ **P21**: Whitespace in strings - Verified working correctly
-- ✅ **P23**: Numeric range validation - i32/i64/f32/f64 range checks
 - ✅ **P15**: Nested function calls - Verified working via recursion
+- ✅ **P16**: Complex type unions - Pipe operator support (Type1 | Type2)
+- ✅ **P17**: Postfix operator binding - Verified left-to-right chaining
+- ✅ **P18**: Escape sequence validation - Warnings for unsupported escapes
+- ✅ **P19**: Unicode identifiers - Verified working (Spanish, Cyrillic, CJK, Greek)
+- ✅ **P21**: Whitespace in strings - Verified working correctly
 - ✅ **P22**: Multiline strings - Triple-quote support added
+- ✅ **P23**: Numeric range validation - i32/i64/f32/f64 range checks
+- ✅ **P24**: Chained comparisons - Verified working (a < b < c)
 - ⏳ **P13**: Ambiguous grammar (reference vs array)
-- ⏳ **P16**: Complex type unions
-- ⏳ **P17**: Postfix operator binding
-- ⏳ **P19**: Unicode identifiers
 - ⏳ **P20**: Circular reference validation
-- ⏳ **P24**: Chained comparisons
 - ⏳ **P25**: Method signature consistency
 
 ### Batch 5: Decompiler Enhancements ⏳ QUEUED (0/2)
@@ -103,7 +103,9 @@
 | `c5598a0` | Detailed Summary | Documentation |
 | `454a7c1` | High-Severity Batches 1 & 2 | 9 high-severity |
 | `1ef03a0` | Batch 4 Start - P14 | 1 parser validation |
-| `940f611` | Batch 4 Part 1 - Tokenizer | 4 parser/tokenizer (P18, P21, P22, P23, P15) |
+| `940f611` | Batch 4 Part 1 - Tokenizer | 5 parser/tokenizer (P18, P21, P22, P23, P15) |
+| `68c51d2` | Progress Update Docs | Documentation |
+| `f41aadf` | Batch 4 Part 2 - Parser | 4 parser enhancements (P16, P17, P19, P24) |
 
 ---
 
@@ -383,6 +385,89 @@ def _validate_numeric_range(self, num_str: str, is_float: bool) -> None:
 - Function call arguments parsed as full expressions
 - Example: `outer(inner(x))` parsed correctly via recursion
 
+#### P16: Complex Type Unions
+```python
+# AST Node Enhancement
+@dataclass(frozen=True)
+class TypeSpec:
+    base_type: str
+    shape: Optional[List[str]] = None
+    location: Optional[str] = None
+    transfer: Optional[Tuple[str, str]] = None
+    union_types: Optional[List[str]] = None  # NEW: For Union types
+
+    def __str__(self) -> str:
+        if self.union_types:
+            result = " | ".join(self.union_types)
+        else:
+            result = self.base_type
+        # ... rest of formatting
+
+# Parser Enhancement
+def parse_type_spec(self) -> TypeSpec:
+    base_type = self.expect(TokenType.IDENTIFIER).value
+
+    # Check for union types (Type1 | Type2 | Type3)
+    union_types = None
+    if self.current_token.type == TokenType.PIPE:
+        union_types = [base_type]  # Start with the base type
+        while self.current_token.type == TokenType.PIPE:
+            self.advance()  # Skip |
+            # Next type could be a reference or a regular type
+            if self.current_token.type == TokenType.LBRACKET:
+                union_types.append(self.parse_reference_string())
+            else:
+                union_types.append(self.expect(TokenType.IDENTIFIER).value)
+
+    return TypeSpec(base_type=base_type, ..., union_types=union_types)
+```
+**Examples**:
+- `value ∈ i32 | str` - Simple union
+- `result ∈ i32 | str | f32` - Multi-type union
+- `mixed ∈ i32 | [Ref:CustomType]` - Mixed basic and reference types
+- `refs ∈ [Ref:TypeA] | [Ref:TypeB]` - Union of references
+
+#### P17: Postfix Operator Binding
+- **Status**: Verified working correctly
+- Left-to-right binding confirmed for all postfix operators
+- Operators: `.` (attribute access), `[]` (indexing), `()` (calls)
+- Complex chains work: `obj.get_data()[index].method()`
+- Test coverage:
+  - `obj.method()` - Attribute then call
+  - `arr[0]` - Array indexing
+  - `obj.data[0]` - Attribute then index
+  - `obj.get_array()[0]` - Call then index
+  - `matrix[i, j]` - Multi-dimensional indexing
+  - `obj.nested.attr.method()` - Chained attributes
+  - `obj.get_data()[index].value` - Full chain
+  - `data.items[0].process()` - Mixed postfix ops
+- 8/8 tests passing
+
+#### P19: Unicode Identifiers
+- **Status**: Verified working correctly
+- Python's `str.isalnum()` already supports Unicode characters
+- Tokenizer's `read_identifier()` accepts any Unicode alphanumeric + `_`, `-`
+- Supported scripts:
+  - **Latin with accents**: café, naïve, résultat
+  - **Spanish**: nombre, año
+  - **French**: Données, valeur
+  - **Cyrillic**: Данные, значение (Russian)
+  - **CJK**: 数据 (Chinese), データ (Japanese), 값 (Korean)
+  - **Greek**: α, β, γ, Αλγόριθμος, μήκος
+- 8/8 tests passing across multiple Unicode scripts
+
+#### P24: Chained Comparisons
+- **Status**: Verified working correctly
+- Parser's expression handling already supports chained comparisons
+- Examples that work:
+  - `a < b` - Simple comparison
+  - `a < b < c` - Chained comparison
+  - `lower <= x <= upper` - Range check
+  - `a < b > c` - Mixed chain
+  - `a < b < c < d` - Triple chain
+- Parser treats each comparison operator in the chain
+- 5/5 tests passing
+
 ---
 
 ## Testing
@@ -407,6 +492,10 @@ def _validate_numeric_range(self, num_str: str, is_float: bool) -> None:
 - **String whitespace**: `tests/test_string_whitespace.py` (12/12 tests passing)
 - **Multiline strings**: `tests/test_multiline_strings.py` (10/10 tests passing)
 - **Nested function calls**: `tests/test_nested_function_calls.py` (5/5 tests passing)
+- **Union types**: `tests/test_union_types.py` (4/4 tests passing)
+- **Postfix operators**: `tests/test_postfix_operators.py` (8/8 tests passing)
+- **Unicode identifiers**: `tests/test_unicode_identifiers.py` (8/8 tests passing)
+- **Chained comparisons**: `tests/test_chained_comparisons.py` (5/5 tests passing)
 
 ---
 
@@ -478,7 +567,8 @@ def _validate_numeric_range(self, num_str: str, is_float: bool) -> None:
 
 | File | Critical | High | Total |
 |------|----------|------|-------|
-| `src/pyshort/core/parser.py` | 7 loops + 1 prec | 1 validation | **9 fixes** |
+| `src/pyshort/core/parser.py` | 7 loops + 1 prec | 2 enhancements | **10 fixes** |
+| `src/pyshort/core/ast_nodes.py` | - | 1 enhancement | **1 fix** |
 | `src/pyshort/core/tokenizer.py` | 2 bugs | 3 fixes + 2 verified | **7 fixes** |
 | `src/pyshort/decompiler/py2short.py` | 2 bugs | 3 enhancements | **5 fixes** |
 | `src/pyshort/indexer/repo_indexer.py` | 4 bugs | 4 optimizations | **8 fixes** |
@@ -489,27 +579,39 @@ def _validate_numeric_range(self, num_str: str, is_float: bool) -> None:
 | `tests/test_string_whitespace.py` | Whitespace | 12/12 passing | **New** |
 | `tests/test_multiline_strings.py` | Triple-quote | 10/10 passing | **New** |
 | `tests/test_nested_function_calls.py` | Nested calls | 5/5 passing | **New** |
+| `tests/test_union_types.py` | Union types | 4/4 passing | **New** |
+| `tests/test_postfix_operators.py` | Postfix binding | 8/8 passing | **New** |
+| `tests/test_unicode_identifiers.py` | Unicode support | 8/8 passing | **New** |
+| `tests/test_chained_comparisons.py` | Chained comp | 5/5 passing | **New** |
 
 ---
 
 ## Conclusion
 
-**30/76 issues resolved (39% complete)**
-**High-Severity: 14/23 complete (61%)**
+**33/76 issues resolved (43% complete)**
+**High-Severity: 17/23 complete (74%)**
 
-The PyShorthand codebase has progressed from **not production ready** to **production ready and optimized**. All critical bugs have been fixed and verified, and we've completed over half of high-severity improvements.
+The PyShorthand codebase has progressed from **not production ready** to **production ready and optimized**. All critical bugs have been fixed and verified, and we've completed 74% of high-severity improvements.
 
-### Recent Progress (Batch 4 Part 1)
+### Recent Progress (Batch 4 Parts 1 & 2)
+
+**Part 1 - Tokenizer Enhancements:**
 - ✅ Escape sequence validation with warnings
 - ✅ Numeric range validation (i32/i64/f32/f64)
 - ✅ Multiline string support (triple-quoted strings)
 - ✅ Whitespace preservation verified
 - ✅ Nested function calls verified
 
+**Part 2 - Parser Enhancements:**
+- ✅ Complex type unions (Type1 | Type2 | Type3)
+- ✅ Postfix operator binding verified
+- ✅ Unicode identifiers verified (Spanish, Cyrillic, CJK, Greek)
+- ✅ Chained comparisons verified (a < b < c)
+
 ### Remaining Work
-- **7 high-severity parser fixes** (P13, P16, P17, P19, P20, P24, P25)
-- 2 decompiler enhancements (D7, D8)
+- **3 high-severity parser fixes** (P13, P20, P25)
+- 2 decompiler enhancements (D7, D8) - deferred to Batch 5
 - 23 medium-severity issues
 - 14 low-severity issues
 
-The remaining work is primarily focused on advanced parser features, enhanced validation, and code quality improvements - all non-blocking for production use.
+The remaining work includes 3 complex parser features (ambiguous grammar resolution, circular reference validation, method signature consistency) and code quality improvements - all non-blocking for production use.
