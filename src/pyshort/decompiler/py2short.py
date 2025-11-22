@@ -74,8 +74,8 @@ class PyShorthandGenerator:
             lines.extend(entity_lines)
             lines.append("")
 
-        # Extract module-level functions
-        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
+        # Extract module-level functions (including async functions)
+        functions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
 
         if functions:
             lines.append("# Module-level functions")
@@ -217,7 +217,7 @@ class PyShorthandGenerator:
             lines.append("  # No typed attributes found")
 
         # Extract methods as comments (parser doesn't support F:name syntax in entities yet)
-        methods = [node for node in cls.body if isinstance(node, ast.FunctionDef)]
+        methods = [node for node in cls.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
 
         if methods:
             lines.append("")
@@ -226,13 +226,8 @@ class PyShorthandGenerator:
                 if method.name.startswith('_') and method.name != '__init__':
                     continue  # Skip private methods except __init__
 
-                # Check for route decorators (FastAPI/Flask)
-                route_info = self._extract_route_info(method)
+                # Generate signature with v1.4 tags
                 sig = self._generate_function_signature(method, indent="  # ")
-
-                if route_info:
-                    sig += f" [{route_info}]"
-
                 lines.append(sig)
 
         return lines
@@ -304,7 +299,7 @@ class PyShorthandGenerator:
         """Check if class contains FastAPI routes."""
         for node in cls.body:
             if isinstance(node, ast.FunctionDef):
-                if self._extract_route_info(node):
+                if self._extract_http_route_tag(node):
                     return True
         return False
 
@@ -337,27 +332,6 @@ class PyShorthandGenerator:
 
                     if dec_name in ('get', 'post', 'put', 'delete', 'patch'):
                         return "FastAPI/Flask"
-
-        return None
-
-    def _extract_route_info(self, method: ast.FunctionDef) -> Optional[str]:
-        """Extract route information from method decorators."""
-        for decorator in method.decorator_list:
-            # Check for @app.get("/path"), @router.post("/path"), etc.
-            if isinstance(decorator, ast.Call):
-                if isinstance(decorator.func, ast.Attribute):
-                    http_method = decorator.func.attr
-                    if http_method in ('get', 'post', 'put', 'delete', 'patch', 'route'):
-                        # Try to extract path
-                        if decorator.args and isinstance(decorator.args[0], ast.Constant):
-                            path = decorator.args[0].value
-                            return f"{http_method.upper()} {path}"
-                        return http_method.upper()
-
-            # Check for @route decorator
-            elif isinstance(decorator, ast.Name):
-                if decorator.id == 'route':
-                    return "ROUTE"
 
         return None
 
@@ -424,14 +398,14 @@ class PyShorthandGenerator:
         return state_vars
 
     def _generate_function_signature(self, func: ast.FunctionDef, indent: str = "") -> str:
-        """Generate function signature in PyShorthand format.
+        """Generate function signature in PyShorthand format with v1.4 tags.
 
         Args:
             func: Function definition node
             indent: Indentation prefix
 
         Returns:
-            Function signature string
+            Function signature string with tags
         """
         # Extract parameters
         params = []
@@ -453,7 +427,339 @@ class PyShorthandGenerator:
         if func.returns:
             return_type = self._convert_type_annotation(func.returns)
 
-        return f"{indent}F:{func.name}({params_str}) → {return_type}"
+        # Build base signature
+        sig = f"{indent}F:{func.name}({params_str}) → {return_type}"
+
+        # Extract v1.4 tags
+        tags = self._extract_function_tags(func)
+        if tags:
+            sig += " " + " ".join(tags)
+
+        return sig
+
+    def _extract_function_tags(self, func: ast.FunctionDef) -> List[str]:
+        """Extract all v1.4 tags for a function.
+
+        Tags are ordered: Decorator → Route → Operation → Complexity
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            List of tag strings like ["[Prop]", "[GET /api/data]", "[O(N)]"]
+        """
+        tags = []
+
+        # 1. Decorator tags (Prop, Static, Class, Cached, Auth, etc.)
+        decorator_tags = self._extract_decorator_tags(func)
+        tags.extend(decorator_tags)
+
+        # 2. HTTP route tags
+        route_tag = self._extract_http_route_tag(func)
+        if route_tag:
+            tags.append(route_tag)
+
+        # 3. Operation tags (analyze function body)
+        operation_tags = self._extract_operation_tags(func)
+        tags.extend(operation_tags)
+
+        # 4. Complexity tag (from docstring or analysis)
+        complexity_tag = self._extract_complexity_tag(func)
+        if complexity_tag:
+            tags.append(complexity_tag)
+
+        return tags
+
+    def _extract_decorator_tags(self, func: ast.FunctionDef) -> List[str]:
+        """Extract decorator tags from function decorators.
+
+        Recognizes:
+        - @property → [Prop]
+        - @staticmethod → [Static]
+        - @classmethod → [Class]
+        - @cached_property → [Cached]
+        - @lru_cache → [Cached]
+        - @login_required, @require_auth, etc. → [Auth]
+        - Custom decorators → [DecoratorName]
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            List of decorator tag strings
+        """
+        tags = []
+
+        for decorator in func.decorator_list:
+            dec_name = None
+
+            # Simple decorator: @property
+            if isinstance(decorator, ast.Name):
+                dec_name = decorator.id
+
+            # Decorator call: @lru_cache(maxsize=128)
+            elif isinstance(decorator, ast.Call):
+                if isinstance(decorator.func, ast.Name):
+                    dec_name = decorator.func.id
+                elif isinstance(decorator.func, ast.Attribute):
+                    dec_name = decorator.func.attr
+
+            # Attribute decorator: @functools.lru_cache
+            elif isinstance(decorator, ast.Attribute):
+                dec_name = decorator.attr
+
+            if dec_name:
+                # Map Python decorators to PyShorthand decorator tags
+                if dec_name == 'property':
+                    tags.append("[Prop]")
+                elif dec_name == 'staticmethod':
+                    tags.append("[Static]")
+                elif dec_name == 'classmethod':
+                    tags.append("[Class]")
+                elif dec_name in ('cached_property', 'lru_cache', 'cache'):
+                    # Check for TTL or maxsize arguments
+                    if isinstance(decorator, ast.Call):
+                        # Look for maxsize or ttl keyword arg
+                        for kw in decorator.keywords:
+                            if kw.arg in ('maxsize', 'ttl'):
+                                if isinstance(kw.value, ast.Constant):
+                                    tags.append(f"[Cached:TTL:{kw.value.value}]")
+                                    break
+                        else:
+                            tags.append("[Cached]")
+                    else:
+                        tags.append("[Cached]")
+                elif dec_name in ('login_required', 'require_auth', 'authenticated', 'auth_required'):
+                    tags.append("[Auth]")
+                # Skip HTTP route decorators (handled separately)
+                elif dec_name not in ('get', 'post', 'put', 'delete', 'patch', 'route'):
+                    # Custom decorator - add as-is if not too generic
+                    if dec_name not in ('wraps', 'contextmanager'):
+                        tags.append(f"[{dec_name}]")
+
+        return tags
+
+    def _extract_http_route_tag(self, func: ast.FunctionDef) -> Optional[str]:
+        """Extract HTTP route tag from web framework decorators.
+
+        Recognizes:
+        - @app.get("/path") → [GET /path]
+        - @router.post("/users/{id}") → [POST /users/{id}]
+        - @route("/path", methods=["GET"]) → [GET /path]
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            HTTP route tag string or None
+        """
+        for decorator in func.decorator_list:
+            # FastAPI/Flask style: @app.get("/path")
+            if isinstance(decorator, ast.Call):
+                if isinstance(decorator.func, ast.Attribute):
+                    http_method = decorator.func.attr.upper()
+
+                    # Check if it's an HTTP method
+                    if http_method in ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'):
+                        # Extract path from first argument
+                        if decorator.args and isinstance(decorator.args[0], ast.Constant):
+                            path = decorator.args[0].value
+                            return f"[{http_method} {path}]"
+                        return f"[{http_method}]"
+
+                    # @route decorator with methods argument
+                    elif http_method == 'ROUTE':
+                        path = None
+                        method = 'GET'  # Default
+
+                        # Extract path from first argument
+                        if decorator.args and isinstance(decorator.args[0], ast.Constant):
+                            path = decorator.args[0].value
+
+                        # Look for methods keyword argument
+                        for kw in decorator.keywords:
+                            if kw.arg == 'methods':
+                                if isinstance(kw.value, ast.List):
+                                    # Get first method
+                                    if kw.value.elts and isinstance(kw.value.elts[0], ast.Constant):
+                                        method = kw.value.elts[0].value
+
+                        if path:
+                            return f"[{method} {path}]"
+
+        return None
+
+    def _extract_operation_tags(self, func: ast.FunctionDef) -> List[str]:
+        """Extract operation tags by analyzing function body.
+
+        Detects:
+        - Neural network operations: [NN:∇] (if torch operations)
+        - Linear algebra: [Lin:MatMul] (matrix operations)
+        - I/O operations: [IO:Disk], [IO:Net]
+        - Iteration: [Iter:Hot] (loops)
+        - Synchronization: [Sync:Lock]
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            List of operation tag strings
+        """
+        tags = []
+        has_loops = False
+        has_io = False
+        has_torch = False
+        has_matmul = False
+        has_async = False
+
+        # Analyze function body
+        for node in ast.walk(func):
+            # Detect loops
+            if isinstance(node, (ast.For, ast.While)):
+                has_loops = True
+
+            # Detect I/O operations
+            elif isinstance(node, ast.Call):
+                func_name = self._get_name(node.func)
+
+                # File I/O
+                if any(io_op in func_name.lower() for io_op in ['open', 'read', 'write', 'file']):
+                    has_io = True
+
+                # Network I/O (only if calling actual network functions, not just containing words)
+                if any(func_name.lower().startswith(net_op) or f'.{net_op}' in func_name.lower()
+                       for net_op in ['request', 'fetch', 'socket', 'urlopen', 'get(', 'post(']):
+                    if 'Net' not in str(tags):
+                        tags.append("[IO:Net]")
+
+                # Torch operations
+                if 'torch' in func_name.lower() or func_name in ('matmul', 'mm', 'bmm'):
+                    has_torch = True
+
+                # Matrix multiplication
+                if func_name in ('matmul', 'mm', 'bmm', 'dot'):
+                    has_matmul = True
+
+            # Detect async operations
+            elif isinstance(node, (ast.Await, ast.AsyncFor, ast.AsyncWith)):
+                has_async = True
+
+        # Generate operation tags based on analysis
+        if has_torch:
+            # Check for gradient operations
+            has_gradient = any(
+                isinstance(node, ast.Attribute) and node.attr in ('backward', 'grad')
+                for node in ast.walk(func)
+            )
+            if has_gradient and has_matmul:
+                tags.append("[NN:∇:Lin:MatMul]")
+            elif has_gradient:
+                tags.append("[NN:∇]")
+            elif has_matmul:
+                tags.append("[NN:Lin:MatMul]")
+
+        elif has_matmul:
+            tags.append("[Lin:MatMul]")
+
+        if has_io and not any('IO:Net' in t for t in tags):
+            tags.append("[IO:Disk]")
+
+        if has_loops:
+            # Detect nested loops
+            loop_depth = self._calculate_loop_depth(func)
+            if loop_depth > 1:
+                tags.append("[Iter:Nested]")
+            else:
+                tags.append("[Iter]")
+
+        if has_async:
+            tags.append("[IO:Async]")
+
+        return tags
+
+    def _extract_complexity_tag(self, func: ast.FunctionDef) -> Optional[str]:
+        """Extract complexity tag from docstring or analyze function body.
+
+        Looks for:
+        - Explicit O(...) notation in docstring
+        - Pattern-based complexity detection (nested loops, etc.)
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            Complexity tag string or None
+        """
+        # First, try to extract from docstring
+        docstring = ast.get_docstring(func)
+        if docstring:
+            # Look for O(...) pattern
+            complexity_match = re.search(r'O\([^)]+\)', docstring)
+            if complexity_match:
+                complexity = complexity_match.group(0)
+                return f"[{complexity}]"
+
+            # Look for complexity annotations like "Complexity: O(N)"
+            complexity_match = re.search(r'Complexity:\s*(O\([^)]+\))', docstring, re.IGNORECASE)
+            if complexity_match:
+                complexity = complexity_match.group(1)
+                return f"[{complexity}]"
+
+            # Look for "Time: O(N)" or "Runtime: O(N)"
+            time_match = re.search(r'(?:Time|Runtime):\s*(O\([^)]+\))', docstring, re.IGNORECASE)
+            if time_match:
+                complexity = time_match.group(1)
+                return f"[{complexity}]"
+
+        # Pattern-based complexity detection
+        loop_depth = self._calculate_loop_depth(func)
+        if loop_depth == 1:
+            return "[O(N)]"
+        elif loop_depth == 2:
+            return "[O(N²)]"
+        elif loop_depth == 3:
+            return "[O(N³)]"
+
+        # Default for simple functions
+        if loop_depth == 0:
+            # Check if it's just a simple return
+            if len(func.body) == 1:
+                return "[O(1)]"
+
+        return None
+
+    def _calculate_loop_depth(self, func: ast.FunctionDef) -> int:
+        """Calculate maximum loop nesting depth in function.
+
+        Args:
+            func: Function definition node
+
+        Returns:
+            Maximum loop depth (0 = no loops)
+        """
+        max_depth = 0
+        current_depth = 0
+
+        class LoopDepthVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.max_depth = 0
+                self.current_depth = 0
+
+            def visit_For(self, node):
+                self.current_depth += 1
+                self.max_depth = max(self.max_depth, self.current_depth)
+                self.generic_visit(node)
+                self.current_depth -= 1
+
+            def visit_While(self, node):
+                self.current_depth += 1
+                self.max_depth = max(self.max_depth, self.current_depth)
+                self.generic_visit(node)
+                self.current_depth -= 1
+
+        visitor = LoopDepthVisitor()
+        visitor.visit(func)
+        return visitor.max_depth
 
     def _convert_type_annotation(self, annotation: ast.expr) -> str:
         """Convert Python type annotation to PyShorthand type spec.
