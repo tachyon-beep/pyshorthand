@@ -20,6 +20,7 @@ UNICODE_TO_ASCII: Dict[str, str] = {
     "≈": "REF",
     "≜": "COPY",
     "∀": "FOR",
+    "◊": "EXTENDS",  # v1.5: Inheritance
 }
 
 # ASCII → Unicode mapping (reverse of above)
@@ -46,6 +47,9 @@ OPERATORS: Set[str] = {
     # Membership
     "∈",
     "IN",
+    # Inheritance (v1.5)
+    "◊",
+    "EXTENDS",
     # Logic
     "⊢",
     "ASSERT",
@@ -177,7 +181,7 @@ COMMON_QUALIFIERS: Set[str] = {
     "||",
 }
 
-# Decorator tags (v1.4 new)
+# Decorator tags (v1.4 new, v1.5 expanded)
 DECORATOR_TAGS: Set[str] = {
     # Standard Python decorators
     "Prop",       # @property
@@ -186,7 +190,8 @@ DECORATOR_TAGS: Set[str] = {
     "Cached",     # @cached_property or @lru_cache
     "Static",     # @staticmethod
     "Class",      # @classmethod
-    "Abstract",   # @abstractmethod
+    "Abstract",   # @abstractmethod (v1.5: also marks abstract classes/methods)
+    "Protocol",   # v1.5: marks Protocol classes
     # Common framework decorators
     "Auth",       # Authentication required
     "Retry",      # Retry decorator
@@ -270,13 +275,15 @@ VALID_LAYERS: Set[str] = {"Domain", "Infra", "Adapter", "Test"}
 # Valid risk levels
 VALID_RISK_LEVELS: Set[str] = {"High", "Med", "Low"}
 
-# Entity prefixes
+# Entity prefixes (v1.5: added P and E)
 ENTITY_PREFIXES: Dict[str, str] = {
     "C": "class",
     "D": "data",
     "I": "interface",
     "M": "module",
     "F": "function",
+    "P": "protocol",  # v1.5: Protocol (typing.Protocol)
+    "E": "enum",     # v1.5: Enum
     "Ref": "reference",
 }
 
