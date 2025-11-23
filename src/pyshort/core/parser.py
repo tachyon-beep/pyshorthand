@@ -281,12 +281,9 @@ class Parser:
                 return True
 
             # Check for qualifiers (colon after first token suggests tag, not shape)
-            if self.peek() and self.peek().type == TokenType.COLON:
-                return True
-
             # If it's a single identifier with no comma, could be either shape or tag
             # Default to shape for backward compatibility, unless it matches known patterns
-            return False
+            return bool(self.peek() and self.peek().type == TokenType.COLON)
 
         finally:
             # Restore position

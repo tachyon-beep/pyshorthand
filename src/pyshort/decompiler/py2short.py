@@ -119,15 +119,14 @@ class PyShorthandGenerator:
                     self.imports.add(module_name)
                     self.import_map[as_name] = module_name
 
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    self.imports.add(node.module)
-                    for alias in node.names:
-                        imported_name = alias.name
-                        as_name = alias.asname if alias.asname else imported_name
-                        # Store mapping from alias to module.name
-                        full_name = f"{node.module}.{imported_name}"
-                        self.import_map[as_name] = full_name
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                self.imports.add(node.module)
+                for alias in node.names:
+                    imported_name = alias.name
+                    as_name = alias.asname if alias.asname else imported_name
+                    # Store mapping from alias to module.name
+                    full_name = f"{node.module}.{imported_name}"
+                    self.import_map[as_name] = full_name
 
     def _extract_module_metadata(
         self, tree: ast.Module, source_file: str | None
@@ -431,17 +430,15 @@ class PyShorthandGenerator:
             if isinstance(base, ast.Name):
                 if "BaseModel" in base.id or "Pydantic" in base.id:
                     return True
-            elif isinstance(base, ast.Attribute):
-                if base.attr == "BaseModel":
-                    return True
+            elif isinstance(base, ast.Attribute) and base.attr == "BaseModel":
+                return True
         return False
 
     def _is_fastapi_route_class(self, cls: ast.ClassDef) -> bool:
         """Check if class contains FastAPI routes."""
         for node in cls.body:
-            if isinstance(node, ast.FunctionDef):
-                if self._extract_http_route_tag(node):
-                    return True
+            if isinstance(node, ast.FunctionDef) and self._extract_http_route_tag(node):
+                return True
         return False
 
     def _detect_web_framework(self, cls: ast.ClassDef) -> str | None:
@@ -528,16 +525,15 @@ class PyShorthandGenerator:
 
                 # Also handle annotated assignments in __init__
                 elif isinstance(node, ast.AnnAssign):
-                    if isinstance(node.target, ast.Attribute):
-                        if (
-                            isinstance(node.target.value, ast.Name)
-                            and node.target.value.id == "self"
-                        ):
-                            attr_name = node.target.attr
-                            type_spec = self._convert_type_annotation(node.annotation)
+                    if isinstance(node.target, ast.Attribute) and (
+                        isinstance(node.target.value, ast.Name)
+                        and node.target.value.id == "self"
+                    ):
+                        attr_name = node.target.attr
+                        type_spec = self._convert_type_annotation(node.annotation)
 
-                            if not any(attr_name in sv for sv in state_vars):
-                                state_vars.append(f"{attr_name} ∈ {type_spec}")
+                        if not any(attr_name in sv for sv in state_vars):
+                            state_vars.append(f"{attr_name} ∈ {type_spec}")
 
         return state_vars
 
@@ -779,9 +775,8 @@ class PyShorthandGenerator:
                 if any(
                     func_name.lower().startswith(net_op) or f".{net_op}" in func_name.lower()
                     for net_op in ["request", "fetch", "socket", "urlopen", "get(", "post("]
-                ):
-                    if "Net" not in str(tags):
-                        tags.append("[IO:Net]")
+                ) and "Net" not in str(tags):
+                    tags.append("[IO:Net]")
 
                 # Torch operations
                 if "torch" in func_name.lower() or func_name in ("matmul", "mm", "bmm"):
@@ -864,12 +859,13 @@ class PyShorthandGenerator:
 
         # Pattern-based complexity detection
         loop_depth = self._calculate_loop_depth(func)
-        if loop_depth == 1:
-            return "[O(N)]"
-        elif loop_depth == 2:
-            return "[O(N²)]"
-        elif loop_depth == 3:
-            return "[O(N³)]"
+        complexity_map = {
+            1: "[O(N)]",
+            2: "[O(N²)]",
+            3: "[O(N³)]",
+        }
+        if loop_depth in complexity_map:
+            return complexity_map[loop_depth]
 
         # Default for simple functions
         if loop_depth == 0:

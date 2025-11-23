@@ -4,6 +4,7 @@ Scans entire repositories and generates PyShorthand specs with dependency analys
 """
 
 import ast
+import contextlib
 import json
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -146,9 +147,8 @@ class RepositoryIndexer:
                     for alias in node.names:
                         imports.add(alias.name.split(".")[0])
 
-                elif isinstance(node, ast.ImportFrom):
-                    if node.module:
-                        imports.add(node.module.split(".")[0])
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    imports.add(node.module.split(".")[0])
 
         except SyntaxError:
             pass  # Skip files with syntax errors
@@ -227,10 +227,8 @@ class RepositoryIndexer:
 
             # Generate PyShorthand
             pyshorthand = ""
-            try:
+            with contextlib.suppress(Exception):
                 pyshorthand = decompile_file(str(file_path))
-            except Exception:
-                pass  # Decompilation failed, skip
 
             # Count lines
             line_count = source.count("\n") + 1

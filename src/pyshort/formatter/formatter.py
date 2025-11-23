@@ -72,10 +72,7 @@ class Formatter:
         result = "\n".join(lines)
 
         # Apply unicode/ascii preference
-        if self.config.prefer_unicode:
-            result = to_unicode(result)
-        else:
-            result = to_ascii(result)
+        result = to_unicode(result) if self.config.prefer_unicode else to_ascii(result)
 
         return result
 
@@ -149,7 +146,7 @@ class Formatter:
         tags = []
         if cls.is_abstract:
             tags.append("[Abstract]")
-        if cls.is_protocol and not prefix == "P":
+        if cls.is_protocol and prefix != "P":
             # Only add [Protocol] tag if not already using P: prefix
             tags.append("[Protocol]")
         if tags:
@@ -203,10 +200,7 @@ class Formatter:
             sorted_vars.sort(key=lambda sv: sv.name)
 
         # Calculate alignment if needed
-        if self.config.align_types:
-            max_name_len = max(len(sv.name) for sv in sorted_vars)
-        else:
-            max_name_len = 0
+        max_name_len = max(len(sv.name) for sv in sorted_vars) if self.config.align_types else 0
 
         lines = []
         for sv in sorted_vars:
@@ -223,10 +217,7 @@ class Formatter:
         if align_to > 0:
             name = name.ljust(align_to)
 
-        if sv.type_spec:
-            line = f"{indent}{name} ∈ {sv.type_spec}"
-        else:
-            line = f"{indent}{name}"
+        line = f"{indent}{name} ∈ {sv.type_spec}" if sv.type_spec else f"{indent}{name}"
 
         if sv.comment:
             # Add inline comment

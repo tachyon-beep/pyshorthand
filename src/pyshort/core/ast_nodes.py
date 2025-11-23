@@ -115,10 +115,7 @@ class TypeSpec:
     def __str__(self) -> str:
         """Format as PyShorthand notation."""
         # Handle Union types
-        if self.union_types:
-            result = " | ".join(self.union_types)
-        else:
-            result = self.base_type
+        result = " | ".join(self.union_types) if self.union_types else self.base_type
 
         # Add generics (v1.5)
         if self.generic_params:
@@ -160,7 +157,7 @@ class Tag:
 
     base: str  # Tag base (Lin, Prop, GET, O(N), etc.)
     qualifiers: list[str] = field(default_factory=list)  # O(N), Async, Hot, etc.
-    tag_type: Literal[operation, complexity, decorator, http_route, custom] = (
+    tag_type: Literal["operation", "complexity", "decorator", "http_route", "custom"] = (
         "operation"
     )
     http_method: str | None = None  # For HTTP route tags (GET, POST, etc.)
@@ -179,9 +176,8 @@ class Tag:
             if not self.http_path.startswith("/"):
                 raise ValueError(f"HTTP path must start with '/': {self.http_path}")
 
-        if self.tag_type == "complexity":
-            if not is_complexity_tag(self.base):
-                raise ValueError(f"Invalid complexity notation: {self.base}")
+        if self.tag_type == "complexity" and not is_complexity_tag(self.base):
+            raise ValueError(f"Invalid complexity notation: {self.base}")
 
         if self.tag_type == "decorator":
             base_tag = self.base.split(":")[0] if ":" in self.base else self.base
@@ -777,3 +773,7 @@ class PyShortAST:
     def sync_points(self) -> list[Statement]:
         """Get all synchronization points."""
         return [s for s in self.statements if any(tag.is_sync for tag in s.tags)]
+
+
+# Backward compatibility alias
+Literal = LiteralValue

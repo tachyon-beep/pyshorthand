@@ -53,7 +53,7 @@ class CircularReferenceValidator:
         visited = set()
         rec_stack = set()
 
-        for entity_name in self.dependency_graph.keys():
+        for entity_name in self.dependency_graph:
             if entity_name not in visited:
                 cycle = self._detect_cycle_dfs(entity_name, visited, rec_stack, [])
                 if cycle:

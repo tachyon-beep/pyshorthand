@@ -119,8 +119,6 @@ select = [
 ignore = [
     "E501",  # line too long (handled by black)
     "E402",  # module level import not at top (experiments use sys.path hacks)
-    "E722",  # bare except (sometimes needed for robustness)
-    "F821",  # undefined name (false positive with Literal type annotations)
     "F841",  # unused local variable (often assigned for clarity)
     "B007",  # unused loop variable (often intentional for dict iteration)
     "B028",  # no explicit stacklevel in warnings (pedantic)
@@ -130,7 +128,7 @@ ignore = [
     "C414",  # unnecessary double cast (minor optimization)
     "N806",  # non-lowercase variable name (sometimes needed for clarity)
     "UP037", # remove quotes from type annotation (conflicts with Literal)
-    "SIM",   # simplify suggestions (can reduce readability)
+    # "SIM",   # simplify suggestions (can reduce readability)
 ]
 
 [tool.coverage.run]

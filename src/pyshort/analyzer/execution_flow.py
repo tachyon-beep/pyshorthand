@@ -496,12 +496,11 @@ class ExecutionFlowTracer:
                     if words:
                         potential_func = words[-1]
                         # Check if it's alphanumeric (likely a function name)
-                        if potential_func.replace("_", "").isalnum():
-                            if (
-                                potential_func in self.function_map
-                                or potential_func in self.entity_map
-                            ):
-                                calls.add(potential_func)
+                        if potential_func.replace("_", "").isalnum() and (
+                            potential_func in self.function_map
+                            or potential_func in self.entity_map
+                        ):
+                            calls.add(potential_func)
 
         return calls
 

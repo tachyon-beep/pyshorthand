@@ -511,7 +511,8 @@ class CodebaseExplorer:
                             and item.name == method_name
                         ):
                             # Extract source code
-                            source = ast.get_source_segment(open(file_path).read(), item)
+                            with open(file_path) as f:
+                                source = ast.get_source_segment(f.read(), item)
                             if source is None:
                                 continue
 
@@ -662,12 +663,11 @@ class CodebaseExplorer:
         """Find all method calls within a function."""
         calls = set()
         for node in ast.walk(func_node):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Attribute):
-                    # self.method_name()
-                    if isinstance(node.func.value, ast.Name):
-                        if node.func.value.id == "self":
-                            calls.add(node.func.attr)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                # self.method_name()
+                if isinstance(node.func.value, ast.Name):
+                    if node.func.value.id == "self":
+                        calls.add(node.func.attr)
         return list(calls)
 
     def _contains_symbol(self, node: ast.AST, symbol: str) -> bool:

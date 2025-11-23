@@ -498,7 +498,4 @@ def is_valid_tag_component(component: str) -> bool:
     # Allow custom decorator names (alphanumeric + colon for args)
     import re
 
-    if re.match(r"^[A-Z][a-zA-Z0-9_]*(:[a-zA-Z0-9_,]+)?$", component):
-        return True
-
-    return False
+    return bool(re.match(r"^[A-Z][a-zA-Z0-9_]*(:[a-zA-Z0-9_,]+)?$", component))

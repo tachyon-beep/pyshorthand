@@ -219,12 +219,8 @@ class MermaidGenerator:
             target_id = self._get_node_id(target)
 
             # Choose edge style based on dependency type
-            if ":" in dep.ref_id:
-                # Typed reference (e.g., NN:Model)
-                edge = "-->"  # Solid arrow
-            else:
-                # Simple reference
-                edge = "-..->"  # Dashed arrow
+            # Typed reference (e.g., NN:Model) gets solid arrow, simple reference gets dashed
+            edge = "-->" if ":" in dep.ref_id else "-..->"
 
             lines.append(f"  {entity_id} {edge} {target_id}")
 
