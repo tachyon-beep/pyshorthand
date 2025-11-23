@@ -126,16 +126,46 @@ class Formatter:
         return lines
 
     def _format_class(self, cls: Class) -> List[str]:
-        """Format a class definition."""
+        """Format a class definition.
+
+        v1.5 supports:
+        - [P:Name] for protocols
+        - [C:List<T>] for generics
+        - [C:Foo] ◊ Base1, Base2 for inheritance
+        - [Abstract] and [Protocol] tags
+        """
         lines = []
 
-        # Class declaration
-        lines.append(f"[C:{cls.name}]")
+        # v1.5: Use P: prefix for protocols
+        prefix = "P" if cls.is_protocol else "C"
 
-        # Dependencies
+        # Class declaration with optional generic parameters
+        if cls.generic_params:
+            generic_str = ", ".join(cls.generic_params)
+            lines.append(f"[{prefix}:{cls.name}<{generic_str}>]")
+        else:
+            lines.append(f"[{prefix}:{cls.name}]")
+
+        # v1.5: Add [Abstract] or [Protocol] tags if present
+        tags = []
+        if cls.is_abstract:
+            tags.append("[Abstract]")
+        if cls.is_protocol and not prefix == "P":
+            # Only add [Protocol] tag if not already using P: prefix
+            tags.append("[Protocol]")
+        if tags:
+            lines[-1] += " " + " ".join(tags)
+
+        # v1.5: Inheritance (◊ Base1, Base2)
+        if cls.base_classes:
+            bases = ", ".join(cls.base_classes)
+            lines.append(f"  ◊ {bases}")
+            lines.append("")
+
+        # v1.4: Dependencies (kept separate from inheritance)
         if cls.dependencies:
             deps = ", ".join(f"[Ref:{dep.ref_id}]" for dep in cls.dependencies)
-            lines.append(f"  ◊ {deps}")
+            lines.append(f"  Dependencies: {deps}")
             lines.append("")
 
         # State variables (sorted and aligned)
