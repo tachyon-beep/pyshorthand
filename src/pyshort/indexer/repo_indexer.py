@@ -5,10 +5,9 @@ Scans entire repositories and generates PyShorthand specs with dependency analys
 
 import ast
 import json
-from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple
-from dataclasses import dataclass, field, asdict
 from collections import defaultdict
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
 
 from pyshort.decompiler import decompile_file
 
@@ -16,23 +15,25 @@ from pyshort.decompiler import decompile_file
 @dataclass
 class EntityInfo:
     """Information about a single entity (class/function)."""
+
     name: str
     type: str  # 'class' or 'function'
     file_path: str
     module_path: str
     line_number: int
-    state_vars: List[str] = field(default_factory=list)
-    methods: List[str] = field(default_factory=list)
-    dependencies: Set[str] = field(default_factory=set)
+    state_vars: list[str] = field(default_factory=list)
+    methods: list[str] = field(default_factory=list)
+    dependencies: set[str] = field(default_factory=set)
 
 
 @dataclass
 class ModuleInfo:
     """Information about a Python module."""
+
     module_path: str
     file_path: str
-    entities: List[EntityInfo] = field(default_factory=list)
-    imports: Set[str] = field(default_factory=set)
+    entities: list[EntityInfo] = field(default_factory=list)
+    imports: set[str] = field(default_factory=set)
     line_count: int = 0
     pyshorthand: str = ""
 
@@ -40,17 +41,18 @@ class ModuleInfo:
 @dataclass
 class RepositoryIndex:
     """Complete repository index."""
+
     root_path: str
-    modules: Dict[str, ModuleInfo] = field(default_factory=dict)
-    entity_map: Dict[str, EntityInfo] = field(default_factory=dict)  # name -> entity
-    dependency_graph: Dict[str, Set[str]] = field(default_factory=dict)  # module -> dependencies
-    statistics: Dict[str, int] = field(default_factory=dict)
+    modules: dict[str, ModuleInfo] = field(default_factory=dict)
+    entity_map: dict[str, EntityInfo] = field(default_factory=dict)  # name -> entity
+    dependency_graph: dict[str, set[str]] = field(default_factory=dict)  # module -> dependencies
+    statistics: dict[str, int] = field(default_factory=dict)
 
 
 class RepositoryIndexer:
     """Index Python repositories and generate PyShorthand specs."""
 
-    def __init__(self, root_path: str, exclude_patterns: Optional[List[str]] = None):
+    def __init__(self, root_path: str, exclude_patterns: list[str] | None = None):
         """Initialize indexer.
 
         Args:
@@ -59,24 +61,31 @@ class RepositoryIndexer:
         """
         self.root_path = Path(root_path).resolve()
         self.exclude_patterns = exclude_patterns or [
-            'venv', 'env', '.venv',
-            '__pycache__', '.git', '.pytest_cache',
-            'node_modules', 'dist', 'build', '.eggs',
-            '*.egg-info'
+            "venv",
+            "env",
+            ".venv",
+            "__pycache__",
+            ".git",
+            ".pytest_cache",
+            "node_modules",
+            "dist",
+            "build",
+            ".eggs",
+            "*.egg-info",
         ]
         self.index = RepositoryIndex(root_path=str(self.root_path))
 
     def should_exclude(self, path: Path) -> bool:
         """Check if path should be excluded."""
         # Check dot directories first (before loop for efficiency)
-        if path.name.startswith('.') and path.is_dir():
+        if path.name.startswith(".") and path.is_dir():
             return True
 
         # Check exclusion patterns against path components (not full string)
         path_parts = path.parts
         for pattern in self.exclude_patterns:
             # Handle glob patterns
-            if '*' in pattern:
+            if "*" in pattern:
                 if path.match(pattern):
                     return True
             else:
@@ -87,11 +96,11 @@ class RepositoryIndexer:
 
         return False
 
-    def find_python_files(self) -> List[Path]:
+    def find_python_files(self) -> list[Path]:
         """Find all Python files in repository."""
         python_files = []
 
-        for path in self.root_path.rglob('*.py'):
+        for path in self.root_path.rglob("*.py"):
             if not self.should_exclude(path):
                 python_files.append(path)
 
@@ -115,16 +124,16 @@ class RepositoryIndexer:
         parts = list(rel_path.parts[:-1]) + [rel_path.stem]
 
         # Remove 'src' if it's the first part
-        if parts and parts[0] == 'src':
+        if parts and parts[0] == "src":
             parts = parts[1:]
 
         # Remove __init__ from module path
-        if parts and parts[-1] == '__init__':
+        if parts and parts[-1] == "__init__":
             parts = parts[:-1]
 
-        return '.'.join(parts) if parts else file_path.stem
+        return ".".join(parts) if parts else file_path.stem
 
-    def extract_imports(self, source: str) -> Set[str]:
+    def extract_imports(self, source: str) -> set[str]:
         """Extract import statements from Python source."""
         imports = set()
 
@@ -135,18 +144,18 @@ class RepositoryIndexer:
             for node in tree.body:
                 if isinstance(node, ast.Import):
                     for alias in node.names:
-                        imports.add(alias.name.split('.')[0])
+                        imports.add(alias.name.split(".")[0])
 
                 elif isinstance(node, ast.ImportFrom):
                     if node.module:
-                        imports.add(node.module.split('.')[0])
+                        imports.add(node.module.split(".")[0])
 
         except SyntaxError:
             pass  # Skip files with syntax errors
 
         return imports
 
-    def extract_entities(self, source: str, file_path: str, module_path: str) -> List[EntityInfo]:
+    def extract_entities(self, source: str, file_path: str, module_path: str) -> list[EntityInfo]:
         """Extract entity information from Python source."""
         entities = []
 
@@ -158,7 +167,7 @@ class RepositoryIndexer:
                 if isinstance(node, ast.ClassDef):
                     entity = EntityInfo(
                         name=node.name,
-                        type='class',
+                        type="class",
                         file_path=file_path,
                         module_path=module_path,
                         line_number=node.lineno,
@@ -182,7 +191,7 @@ class RepositoryIndexer:
                                 current = current.value
                             if isinstance(current, ast.Name):
                                 parts.insert(0, current.id)
-                            entity.dependencies.add('.'.join(parts))
+                            entity.dependencies.add(".".join(parts))
 
                     entities.append(entity)
 
@@ -190,7 +199,7 @@ class RepositoryIndexer:
                     # Top-level functions
                     entity = EntityInfo(
                         name=node.name,
-                        type='function',
+                        type="function",
                         file_path=file_path,
                         module_path=module_path,
                         line_number=node.lineno,
@@ -202,10 +211,10 @@ class RepositoryIndexer:
 
         return entities
 
-    def index_file(self, file_path: Path) -> Optional[ModuleInfo]:
+    def index_file(self, file_path: Path) -> ModuleInfo | None:
         """Index a single Python file."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 source = f.read()
 
             module_path = self.get_module_path(file_path)
@@ -224,7 +233,7 @@ class RepositoryIndexer:
                 pass  # Decompilation failed, skip
 
             # Count lines
-            line_count = source.count('\n') + 1
+            line_count = source.count("\n") + 1
 
             module_info = ModuleInfo(
                 module_path=module_path,
@@ -237,7 +246,7 @@ class RepositoryIndexer:
 
             return module_info
 
-        except Exception as e:
+        except Exception:
             # Skip files that can't be read/parsed
             return None
 
@@ -258,7 +267,7 @@ class RepositoryIndexer:
                 # Check for sub-modules (e.g., imp="foo" matches "foo.bar")
                 # Still need to iterate, but much less common
                 for other_module in all_modules:
-                    if other_module.startswith(imp + '.'):
+                    if other_module.startswith(imp + "."):
                         dependencies.add(other_module)
 
             self.index.dependency_graph[module_path] = dependencies
@@ -268,16 +277,16 @@ class RepositoryIndexer:
         total_files = len(self.index.modules)
         total_lines = sum(m.line_count for m in self.index.modules.values())
         total_entities = len(self.index.entity_map)
-        total_classes = sum(1 for e in self.index.entity_map.values() if e.type == 'class')
-        total_functions = sum(1 for e in self.index.entity_map.values() if e.type == 'function')
+        total_classes = sum(1 for e in self.index.entity_map.values() if e.type == "class")
+        total_functions = sum(1 for e in self.index.entity_map.values() if e.type == "function")
 
         self.index.statistics = {
-            'total_files': total_files,
-            'total_lines': total_lines,
-            'total_entities': total_entities,
-            'total_classes': total_classes,
-            'total_functions': total_functions,
-            'avg_lines_per_file': total_lines // total_files if total_files > 0 else 0,
+            "total_files": total_files,
+            "total_lines": total_lines,
+            "total_entities": total_entities,
+            "total_classes": total_classes,
+            "total_functions": total_functions,
+            "avg_lines_per_file": total_lines // total_files if total_files > 0 else 0,
         }
 
     def index_repository(self, verbose: bool = False) -> RepositoryIndex:
@@ -297,7 +306,7 @@ class RepositoryIndexer:
         # Index each file
         for i, file_path in enumerate(python_files):
             if verbose and (i % 10 == 0 or i == len(python_files) - 1):
-                print(f"  Indexing: {i + 1}/{len(python_files)} files...", end='\r')
+                print(f"  Indexing: {i + 1}/{len(python_files)} files...", end="\r")
 
             module_info = self.index_file(file_path)
 
@@ -327,33 +336,32 @@ class RepositoryIndexer:
 
     def save_index(self, output_path: str):
         """Save index to JSON file."""
+
         # Helper function to convert EntityInfo to dict with sets as lists
         def entity_to_dict(entity: EntityInfo) -> dict:
             entity_dict = asdict(entity)
             # Convert set to list for JSON serialization
-            entity_dict['dependencies'] = list(entity_dict['dependencies'])
+            entity_dict["dependencies"] = list(entity_dict["dependencies"])
             return entity_dict
 
         # Convert to serializable format
         data = {
-            'root_path': self.index.root_path,
-            'modules': {
+            "root_path": self.index.root_path,
+            "modules": {
                 path: {
-                    'module_path': info.module_path,
-                    'file_path': info.file_path,
-                    'entities': [entity_to_dict(e) for e in info.entities],
-                    'imports': list(info.imports),
-                    'line_count': info.line_count,
+                    "module_path": info.module_path,
+                    "file_path": info.file_path,
+                    "entities": [entity_to_dict(e) for e in info.entities],
+                    "imports": list(info.imports),
+                    "line_count": info.line_count,
                 }
                 for path, info in self.index.modules.items()
             },
-            'dependency_graph': {
-                k: list(v) for k, v in self.index.dependency_graph.items()
-            },
-            'statistics': self.index.statistics,
+            "dependency_graph": {k: list(v) for k, v in self.index.dependency_graph.items()},
+            "statistics": self.index.statistics,
         }
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(data, f, indent=2)
 
     def generate_report(self) -> str:
@@ -378,9 +386,7 @@ class RepositoryIndexer:
 
         # Top modules by entity count
         modules_by_entity_count = sorted(
-            self.index.modules.items(),
-            key=lambda x: len(x[1].entities),
-            reverse=True
+            self.index.modules.items(), key=lambda x: len(x[1].entities), reverse=True
         )[:10]
 
         if modules_by_entity_count:
@@ -392,9 +398,7 @@ class RepositoryIndexer:
         # Dependency insights
         if self.index.dependency_graph:
             most_dependencies = max(
-                self.index.dependency_graph.items(),
-                key=lambda x: len(x[1]),
-                default=(None, set())
+                self.index.dependency_graph.items(), key=lambda x: len(x[1]), default=(None, set())
             )
 
             if most_dependencies[0]:
@@ -421,9 +425,7 @@ class RepositoryIndexer:
 
         # Limit to most connected modules
         modules_by_connections = sorted(
-            self.index.dependency_graph.items(),
-            key=lambda x: len(x[1]),
-            reverse=True
+            self.index.dependency_graph.items(), key=lambda x: len(x[1]), reverse=True
         )[:max_nodes]
 
         # Create nodes and edges
@@ -432,19 +434,19 @@ class RepositoryIndexer:
         # Add nodes
         for module_path, _ in modules_by_connections:
             # Simplify module name for display
-            display_name = module_path.split('.')[-1] if '.' in module_path else module_path
-            node_id = module_path.replace('.', '_')
-            lines.append(f"    {node_id}[\"{display_name}\"]")
+            display_name = module_path.split(".")[-1] if "." in module_path else module_path
+            node_id = module_path.replace(".", "_")
+            lines.append(f'    {node_id}["{display_name}"]')
 
         lines.append("")
 
         # Add edges (dependencies)
         for module_path, dependencies in modules_by_connections:
-            node_id = module_path.replace('.', '_')
+            node_id = module_path.replace(".", "_")
 
             for dep in dependencies:
                 if dep in included_modules:
-                    dep_id = dep.replace('.', '_')
+                    dep_id = dep.replace(".", "_")
                     lines.append(f"    {node_id} --> {dep_id}")
 
         lines.append("```")
@@ -472,11 +474,9 @@ class RepositoryIndexer:
             entities_by_module[entity.module_path].append(entity)
 
         # Sort modules by number of entities
-        sorted_modules = sorted(
-            entities_by_module.items(),
-            key=lambda x: len(x[1]),
-            reverse=True
-        )[:limit]
+        sorted_modules = sorted(entities_by_module.items(), key=lambda x: len(x[1]), reverse=True)[
+            :limit
+        ]
 
         for module_path, entities in sorted_modules:
             lines.append(f"\n{module_path}:")
@@ -492,7 +492,9 @@ class RepositoryIndexer:
         return "\n".join(lines)
 
 
-def index_repository(root_path: str, output_path: Optional[str] = None, verbose: bool = False) -> RepositoryIndex:
+def index_repository(
+    root_path: str, output_path: str | None = None, verbose: bool = False
+) -> RepositoryIndex:
     """Index a repository and optionally save results.
 
     Args:

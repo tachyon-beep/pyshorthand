@@ -4,8 +4,8 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 
-from pyshort.formatter import FormatConfig, format_file
 from pyshort.core.config import load_config
+from pyshort.formatter import FormatConfig, format_file
 
 
 def format_command(args: Namespace) -> int:
@@ -40,11 +40,31 @@ def format_command(args: Namespace) -> int:
 
         # Create config (CLI args override config file)
         config = FormatConfig(
-            indent=args.indent if (hasattr(args, "indent") and args.indent is not None) else format_config.get("indent", 2),
-            align_types=not args.no_align if hasattr(args, "no_align") else format_config.get("align_types", True),
-            prefer_unicode=not args.ascii if hasattr(args, "ascii") else format_config.get("prefer_unicode", True),
-            sort_state_by=args.sort_state if (hasattr(args, "sort_state") and args.sort_state is not None) else format_config.get("sort_state_by", "location"),
-            max_line_length=args.line_length if (hasattr(args, "line_length") and args.line_length is not None) else format_config.get("max_line_length", 100),
+            indent=(
+                args.indent
+                if (hasattr(args, "indent") and args.indent is not None)
+                else format_config.get("indent", 2)
+            ),
+            align_types=(
+                not args.no_align
+                if hasattr(args, "no_align")
+                else format_config.get("align_types", True)
+            ),
+            prefer_unicode=(
+                not args.ascii
+                if hasattr(args, "ascii")
+                else format_config.get("prefer_unicode", True)
+            ),
+            sort_state_by=(
+                args.sort_state
+                if (hasattr(args, "sort_state") and args.sort_state is not None)
+                else format_config.get("sort_state_by", "location")
+            ),
+            max_line_length=(
+                args.line_length
+                if (hasattr(args, "line_length") and args.line_length is not None)
+                else format_config.get("max_line_length", 100)
+            ),
         )
 
         # Format each file
@@ -56,7 +76,7 @@ def format_command(args: Namespace) -> int:
             try:
                 if args.check:
                     # Check mode: see if file needs formatting
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         original = f.read()
                     formatted = format_file(str(file_path), config, in_place=False)
 
@@ -98,7 +118,9 @@ def format_command(args: Namespace) -> int:
         # Summary
         if args.check:
             if needs_formatting:
-                print(f"\n✗ {len(needs_formatting)} file(s) need formatting (out of {len(files_to_format)} checked)")
+                print(
+                    f"\n✗ {len(needs_formatting)} file(s) need formatting (out of {len(files_to_format)} checked)"
+                )
                 return 1  # Exit code 1 for CI/CD
             else:
                 print(f"\n✓ All {len(files_to_format)} file(s) are formatted correctly")
@@ -121,6 +143,7 @@ def format_command(args: Namespace) -> int:
 def main() -> int:
     """Main entry point for pyshort-fmt command."""
     import argparse
+
     from pyshort.core.config import create_default_config
 
     parser = argparse.ArgumentParser(
@@ -129,7 +152,10 @@ def main() -> int:
     )
     parser.add_argument("input", nargs="?", help="Input .pys file or directory")
     parser.add_argument(
-        "-w", "--write", action="store_true", help="Write changes in-place (default: print to stdout)"
+        "-w",
+        "--write",
+        action="store_true",
+        help="Write changes in-place (default: print to stdout)",
     )
     parser.add_argument(
         "--check", action="store_true", help="Check if files need formatting (don't modify)"
@@ -137,15 +163,15 @@ def main() -> int:
     parser.add_argument("--diff", action="store_true", help="Show diff when using --check")
     parser.add_argument("--indent", type=int, help="Indentation spaces (default: 2)")
     parser.add_argument("--no-align", action="store_true", help="Don't align type annotations")
-    parser.add_argument("--ascii", action="store_true", help="Use ASCII notation instead of Unicode")
+    parser.add_argument(
+        "--ascii", action="store_true", help="Use ASCII notation instead of Unicode"
+    )
     parser.add_argument(
         "--sort-state",
         choices=["location", "name", "none"],
         help="How to sort state variables (default: location)",
     )
-    parser.add_argument(
-        "--line-length", type=int, help="Maximum line length (default: 100)"
-    )
+    parser.add_argument("--line-length", type=int, help="Maximum line length (default: 100)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
         "--init-config",

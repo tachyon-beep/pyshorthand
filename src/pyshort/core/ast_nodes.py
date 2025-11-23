@@ -9,18 +9,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal
 
 # Import symbols for tag validation
 from pyshort.core.symbols import (
     DECORATOR_TAGS,
     HTTP_METHODS,
     is_complexity_tag,
-    is_decorator_tag,
-    is_http_method,
-    parse_http_route,
 )
-
 
 # ============================================================================
 # Diagnostic and Error Reporting
@@ -44,8 +40,8 @@ class Diagnostic:
     line: int
     column: int
     message: str
-    suggestion: Optional[str] = None
-    code: Optional[str] = None
+    suggestion: str | None = None
+    code: str | None = None
 
     def __str__(self) -> str:
         """Format diagnostic as human-readable string."""
@@ -69,18 +65,18 @@ class Diagnostic:
 class Metadata:
     """Module/file-level metadata headers."""
 
-    module_name: Optional[str] = None  # [M:Name]
-    module_id: Optional[str] = None  # [ID:Token]
-    role: Optional[str] = None  # [Role:Core|Glue|Script]
-    layer: Optional[str] = None  # [Layer:Domain|Infra|Adapter|Test]
-    risk: Optional[str] = None  # [Risk:High|Med|Low]
-    context: Optional[str] = None  # [Context:GPU-RL]
-    dims: Dict[str, str] = field(default_factory=dict)  # [Dims:N=agents,B=batch]
-    requires: List[str] = field(default_factory=list)  # [Requires:torch>=2.0]
-    owner: Optional[str] = None  # [Owner:TeamName]
-    custom: Dict[str, str] = field(default_factory=dict)  # Any other metadata
+    module_name: str | None = None  # [M:Name]
+    module_id: str | None = None  # [ID:Token]
+    role: str | None = None  # [Role:Core|Glue|Script]
+    layer: str | None = None  # [Layer:Domain|Infra|Adapter|Test]
+    risk: str | None = None  # [Risk:High|Med|Low]
+    context: str | None = None  # [Context:GPU-RL]
+    dims: dict[str, str] = field(default_factory=dict)  # [Dims:N=agents,B=batch]
+    requires: list[str] = field(default_factory=list)  # [Requires:torch>=2.0]
+    owner: str | None = None  # [Owner:TeamName]
+    custom: dict[str, str] = field(default_factory=dict)  # Any other metadata
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "module_name": self.module_name,
@@ -109,12 +105,12 @@ class TypeSpec:
     """
 
     base_type: str  # f32, i64, bool, obj, Map, Str, Any
-    shape: Optional[List[str]] = None  # [N, C, H, W]
-    location: Optional[str] = None  # @CPU, @GPU, @Disk, @Net
-    transfer: Optional[Tuple[str, str]] = None  # @CPU→GPU
-    union_types: Optional[List[str]] = None  # For Union types: [i32, str, f32]
-    generic_params: Optional[List[str]] = None  # v1.5: For generics: List<T>, Dict<K, V>
-    nested_structure: Optional[Dict[str, str]] = None  # v1.5: For {} expansion
+    shape: list[str] | None = None  # [N, C, H, W]
+    location: str | None = None  # @CPU, @GPU, @Disk, @Net
+    transfer: tuple[str, str] | None = None  # @CPU→GPU
+    union_types: list[str] | None = None  # For Union types: [i32, str, f32]
+    generic_params: list[str] | None = None  # v1.5: For generics: List<T>, Dict<K, V>
+    nested_structure: dict[str, str] | None = None  # v1.5: For {} expansion
 
     def __str__(self) -> str:
         """Format as PyShorthand notation."""
@@ -163,10 +159,12 @@ class Tag:
     """
 
     base: str  # Tag base (Lin, Prop, GET, O(N), etc.)
-    qualifiers: List[str] = field(default_factory=list)  # O(N), Async, Hot, etc.
-    tag_type: Literal["operation", "complexity", "decorator", "http_route", "custom"] = "operation"
-    http_method: Optional[str] = None  # For HTTP route tags (GET, POST, etc.)
-    http_path: Optional[str] = None  # For HTTP route tags (/path, /api/users/{id})
+    qualifiers: list[str] = field(default_factory=list)  # O(N), Async, Hot, etc.
+    tag_type: Literal[operation, complexity, decorator, http_route, custom] = (
+        "operation"
+    )
+    http_method: str | None = None  # For HTTP route tags (GET, POST, etc.)
+    http_path: str | None = None  # For HTTP route tags (/path, /api/users/{id})
 
     def __post_init__(self) -> None:
         """Validate tag structure based on tag_type."""
@@ -214,7 +212,7 @@ class Tag:
             return f"[{self.base}]"
 
     @property
-    def complexity(self) -> Optional[str]:
+    def complexity(self) -> str | None:
         """Extract complexity qualifier if present."""
         # Check if this IS a complexity tag
         if self.tag_type == "complexity":
@@ -266,7 +264,7 @@ class Expression(ABC):
     """Base class for all expressions."""
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         pass
 
@@ -277,7 +275,7 @@ class Identifier(Expression):
 
     name: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "identifier", "name": self.name}
 
     def __str__(self) -> str:
@@ -285,13 +283,13 @@ class Identifier(Expression):
 
 
 @dataclass(frozen=True)
-class Literal(Expression):
-    """Literal value."""
+class LiteralValue(Expression):
+    """Literal value (renamed from Literal to avoid clash with typing.Literal)."""
 
-    value: Union[int, float, str, bool]
-    type_hint: Optional[str] = None
+    value: int | float | str | bool
+    type_hint: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "literal", "value": self.value, "type_hint": self.type_hint}
 
     def __str__(self) -> str:
@@ -306,7 +304,7 @@ class BinaryOp(Expression):
     left: Expression
     right: Expression
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "binary_op",
             "operator": self.operator,
@@ -323,10 +321,10 @@ class FunctionCall(Expression):
     """Function call expression."""
 
     function: str
-    args: List[Expression] = field(default_factory=list)
-    kwargs: Dict[str, Expression] = field(default_factory=dict)
+    args: list[Expression] = field(default_factory=list)
+    kwargs: dict[str, Expression] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "function_call",
             "function": self.function,
@@ -344,9 +342,9 @@ class TensorOp(Expression):
     """Tensor operation (matmul, broadcast, etc.)."""
 
     operation: str  # "matmul", "broadcast", "conv", etc.
-    operands: List[Expression]
+    operands: list[Expression]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "tensor_op",
             "operation": self.operation,
@@ -364,7 +362,7 @@ class UnaryOp(Expression):
     operator: str  # -, +, !
     operand: Expression
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "unary_op",
             "operator": self.operator,
@@ -380,9 +378,9 @@ class IndexOp(Expression):
     """Array/tensor indexing operation: base[i, j, k]."""
 
     base: Expression
-    indices: List[Expression]
+    indices: list[Expression]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "index_op",
             "base": self.base.to_dict(),
@@ -400,9 +398,9 @@ class AttributeAccess(Expression):
 
     base: Expression
     attribute: str
-    call: Optional['FunctionCall'] = None  # If it's a method call
+    call: FunctionCall | None = None  # If it's a method call
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {
             "type": "attribute_access",
             "base": self.base.to_dict(),
@@ -429,15 +427,15 @@ class Statement:
 
     line: int
     statement_type: str  # "assignment", "mutation", "flow", "return", etc.
-    lhs: Optional[Union[str, List[str]]] = None  # Left-hand side (variable name(s))
-    operator: Optional[str] = None  # ≡, !, !!, →, ⊳, ←, etc.
-    rhs: Optional[Expression] = None  # Right-hand side expression
-    tags: List[Tag] = field(default_factory=list)
-    profiling: Optional[str] = None  # ⏱16ms
-    condition: Optional[Expression] = None  # For conditionals
-    comment: Optional[str] = None
+    lhs: str | list[str] | None = None  # Left-hand side (variable name(s))
+    operator: str | None = None  # ≡, !, !!, →, ⊳, ←, etc.
+    rhs: Expression | None = None  # Right-hand side expression
+    tags: list[Tag] = field(default_factory=list)
+    profiling: str | None = None  # ⏱16ms
+    condition: Expression | None = None  # For conditionals
+    comment: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "line": self.line,
@@ -477,11 +475,11 @@ class StateVar:
     """State variable declaration with type and location."""
 
     name: str
-    type_spec: Optional[TypeSpec] = None
+    type_spec: TypeSpec | None = None
     line: int = 0
-    comment: Optional[str] = None
+    comment: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "type": str(self.type_spec) if self.type_spec else None,
@@ -505,10 +503,10 @@ class Parameter:
     """Function parameter."""
 
     name: str
-    type_spec: Optional[TypeSpec] = None
-    default: Optional[Expression] = None
+    type_spec: TypeSpec | None = None
+    default: Expression | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "type": str(self.type_spec) if self.type_spec else None,
@@ -527,18 +525,18 @@ class Function:
     """Function definition with contracts."""
 
     name: str
-    params: List[Parameter] = field(default_factory=list)
-    return_type: Optional[TypeSpec] = None
-    modifiers: List[str] = field(default_factory=list)  # [Async], etc.
-    preconditions: List[str] = field(default_factory=list)  # [Pre]
-    postconditions: List[str] = field(default_factory=list)  # [Post]
-    errors: List[str] = field(default_factory=list)  # [Err]
-    body: List[Statement] = field(default_factory=list)
+    params: list[Parameter] = field(default_factory=list)
+    return_type: TypeSpec | None = None
+    modifiers: list[str] = field(default_factory=list)  # [Async], etc.
+    preconditions: list[str] = field(default_factory=list)  # [Pre]
+    postconditions: list[str] = field(default_factory=list)  # [Post]
+    errors: list[str] = field(default_factory=list)  # [Err]
+    body: list[Statement] = field(default_factory=list)
     line: int = 0
-    profiling: Optional[str] = None  # ⏱16ms
-    tags: List[Tag] = field(default_factory=list)
+    profiling: str | None = None  # ⏱16ms
+    tags: list[Tag] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "params": [p.to_dict() for p in self.params],
@@ -559,7 +557,7 @@ class Function:
         return "Async" in self.modifiers
 
     @property
-    def complexity(self) -> Optional[str]:
+    def complexity(self) -> str | None:
         """Get complexity annotation if present."""
         for tag in self.tags:
             if tag.complexity:
@@ -576,7 +574,7 @@ class Entity(ABC):
     """Base class for all entity types."""
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         pass
 
@@ -588,7 +586,7 @@ class Reference(Entity):
     ref_id: str  # [Ref:ID]
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "reference", "ref_id": self.ref_id, "line": self.line}
 
     def __str__(self) -> str:
@@ -607,18 +605,18 @@ class Class(Entity):
     """
 
     name: str
-    state: List[StateVar] = field(default_factory=list)
-    methods: List[Function] = field(default_factory=list)
-    dependencies: List[Reference] = field(default_factory=list)
+    state: list[StateVar] = field(default_factory=list)
+    methods: list[Function] = field(default_factory=list)
+    dependencies: list[Reference] = field(default_factory=list)
     line: int = 0
-    metadata: Optional[Metadata] = None
+    metadata: Metadata | None = None
     # v1.5: Inheritance and generics
-    base_classes: List[str] = field(default_factory=list)  # [C:Foo] ◊ Bar, Baz
-    generic_params: List[str] = field(default_factory=list)  # [C:List<T>]
+    base_classes: list[str] = field(default_factory=list)  # [C:Foo] ◊ Bar, Baz
+    generic_params: list[str] = field(default_factory=list)  # [C:List<T>]
     is_abstract: bool = False  # [C:Foo] [Abstract]
     is_protocol: bool = False  # [P:Drawable] [Protocol]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "class",
             "name": self.name,
@@ -639,10 +637,10 @@ class Data(Entity):
     """Data structure (dataclass, struct)."""
 
     name: str
-    fields: List[StateVar] = field(default_factory=list)
+    fields: list[StateVar] = field(default_factory=list)
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "data",
             "name": self.name,
@@ -656,10 +654,10 @@ class Interface(Entity):
     """Interface/Protocol definition."""
 
     name: str
-    methods: List[str] = field(default_factory=list)  # Method signatures
+    methods: list[str] = field(default_factory=list)  # Method signatures
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "interface", "name": self.name, "methods": self.methods, "line": self.line}
 
 
@@ -671,10 +669,10 @@ class Protocol(Entity):
     """
 
     name: str
-    methods: List[Function] = field(default_factory=list)
+    methods: list[Function] = field(default_factory=list)
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "protocol",
             "name": self.name,
@@ -691,10 +689,10 @@ class Enum(Entity):
     """
 
     name: str
-    values: Dict[str, Union[int, str]] = field(default_factory=dict)  # {RED: 1, GREEN: 2}
+    values: dict[str, int | str] = field(default_factory=dict)  # {RED: 1, GREEN: 2}
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "enum", "name": self.name, "values": self.values, "line": self.line}
 
 
@@ -703,10 +701,10 @@ class Module(Entity):
     """Module/namespace definition."""
 
     name: str
-    exports: List[str] = field(default_factory=list)
+    exports: list[str] = field(default_factory=list)
     line: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "module", "name": self.name, "exports": self.exports, "line": self.line}
 
 
@@ -720,14 +718,14 @@ class PyShortAST:
     """Complete PyShorthand Abstract Syntax Tree."""
 
     metadata: Metadata = field(default_factory=Metadata)
-    entities: List[Entity] = field(default_factory=list)
-    functions: List[Function] = field(default_factory=list)
-    state: List[StateVar] = field(default_factory=list)
-    statements: List[Statement] = field(default_factory=list)
-    diagnostics: List[Diagnostic] = field(default_factory=list)
-    source_file: Optional[str] = None
+    entities: list[Entity] = field(default_factory=list)
+    functions: list[Function] = field(default_factory=list)
+    state: list[StateVar] = field(default_factory=list)
+    statements: list[Statement] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+    source_file: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert entire AST to dictionary."""
         return {
             "metadata": self.metadata.to_dict(),
@@ -761,21 +759,21 @@ class PyShortAST:
         return any(d.severity == DiagnosticSeverity.WARNING for d in self.diagnostics)
 
     @property
-    def mutations(self) -> List[Statement]:
+    def mutations(self) -> list[Statement]:
         """Get all mutation statements."""
         return [s for s in self.statements if s.is_mutation]
 
     @property
-    def system_mutations(self) -> List[Statement]:
+    def system_mutations(self) -> list[Statement]:
         """Get all system-level mutations."""
         return [s for s in self.statements if s.is_system_mutation]
 
     @property
-    def io_operations(self) -> List[Statement]:
+    def io_operations(self) -> list[Statement]:
         """Get all I/O operations."""
         return [s for s in self.statements if any(tag.is_io for tag in s.tags)]
 
     @property
-    def sync_points(self) -> List[Statement]:
+    def sync_points(self) -> list[Statement]:
         """Get all synchronization points."""
         return [s for s in self.statements if any(tag.is_sync for tag in s.tags)]

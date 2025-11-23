@@ -3,17 +3,16 @@
 Simple verification script for critical bug fixes (no pytest required).
 """
 
-import sys
-import os
-from pathlib import Path
-import tempfile
 import json
+import sys
+import tempfile
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from pyshort.core.tokenizer import Tokenizer
 from pyshort.core.parser import Parser
+from pyshort.core.tokenizer import Tokenizer
 from pyshort.decompiler.py2short import PyShorthandGenerator, decompile
 from pyshort.indexer.repo_indexer import RepositoryIndexer
 
@@ -76,12 +75,12 @@ class Example:
     has_wrong_i32_for_bool = "enabled ∈ i32" in result or "enabled: i32" in result
 
     if has_wrong_i32_for_bool:
-        print(f"  ❌ FAIL: Boolean incorrectly typed as i32")
+        print("  ❌ FAIL: Boolean incorrectly typed as i32")
         print(f"  Result: {result[:200]}")
         return False
 
     if not has_bool_type:
-        print(f"  ⚠ WARNING: No bool type found (might be ok if using different format)")
+        print("  ⚠ WARNING: No bool type found (might be ok if using different format)")
 
     print("  ✓ PASS: Boolean type inference works")
     return True
@@ -106,12 +105,12 @@ def helper():
     generator.generate(tree)
 
     if "json" in generator.imports:
-        print(f"  ❌ FAIL: Nested import incorrectly captured")
+        print("  ❌ FAIL: Nested import incorrectly captured")
         print(f"  Imports: {generator.imports}")
         return False
 
     if "os" not in generator.imports or "sys" not in generator.imports:
-        print(f"  ❌ FAIL: Module-level imports not captured")
+        print("  ❌ FAIL: Module-level imports not captured")
         print(f"  Imports: {generator.imports}")
         return False
 
@@ -136,18 +135,18 @@ class MyClass:
 
     functions = [e for e in entities if e.type == "function"]
     if len(functions) == 0:
-        print(f"  ❌ FAIL: No top-level functions captured")
+        print("  ❌ FAIL: No top-level functions captured")
         print(f"  Entities: {entities}")
         return False
 
     function_names = {f.name for f in functions}
     if "top_level_function" not in function_names:
-        print(f"  ❌ FAIL: Expected function not found")
+        print("  ❌ FAIL: Expected function not found")
         print(f"  Functions: {function_names}")
         return False
 
     if "method" in function_names:
-        print(f"  ❌ FAIL: Class method incorrectly captured as top-level")
+        print("  ❌ FAIL: Class method incorrectly captured as top-level")
         return False
 
     print("  ✓ PASS: Top-level functions extracted correctly")
@@ -172,12 +171,12 @@ class Outer:
     class_names = {e.name for e in entities if e.type == "class"}
 
     if "Inner" in class_names:
-        print(f"  ❌ FAIL: Nested class incorrectly captured as top-level")
+        print("  ❌ FAIL: Nested class incorrectly captured as top-level")
         print(f"  Classes: {class_names}")
         return False
 
     if "Outer" not in class_names:
-        print(f"  ❌ FAIL: Outer class not captured")
+        print("  ❌ FAIL: Outer class not captured")
         return False
 
     print("  ✓ PASS: Nested classes handled correctly")
@@ -213,7 +212,7 @@ class Derived:
 
             # Check that it's valid JSON (no serialization errors)
             if "modules" not in data:
-                print(f"  ❌ FAIL: Invalid index structure")
+                print("  ❌ FAIL: Invalid index structure")
                 return False
 
             print("  ✓ PASS: Serialization works correctly")
@@ -266,9 +265,9 @@ def test_parser_eof_handling():
 
 def main():
     """Run all verification tests."""
-    print("="*80)
+    print("=" * 80)
     print("VERIFYING CRITICAL BUG FIXES")
-    print("="*80)
+    print("=" * 80)
     print()
 
     tests = [
@@ -289,13 +288,14 @@ def main():
         except Exception as e:
             print(f"  ❌ ERROR: {e}")
             import traceback
+
             traceback.print_exc()
             results.append(False)
         print()
 
-    print("="*80)
+    print("=" * 80)
     print("SUMMARY")
-    print("="*80)
+    print("=" * 80)
     passed = sum(results)
     total = len(results)
     print(f"Tests passed: {passed}/{total}")
@@ -305,7 +305,7 @@ def main():
     else:
         print(f"⚠ {total - passed} test(s) failed")
 
-    print("="*80)
+    print("=" * 80)
 
     return passed == total
 

@@ -10,7 +10,6 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
 # Test repositories with diverse patterns
 REPOS = [
@@ -19,42 +18,42 @@ REPOS = [
         "url": "https://github.com/karpathy/nanoGPT.git",
         "description": "Minimal PyTorch GPT implementation",
         "test_files": ["model.py", "train.py"],
-        "category": "PyTorch/ML"
+        "category": "PyTorch/ML",
     },
     {
         "name": "minGPT",
         "url": "https://github.com/karpathy/minGPT.git",
         "description": "Minimal PyTorch GPT with training",
         "test_files": ["mingpt/model.py", "mingpt/trainer.py"],
-        "category": "PyTorch/ML"
+        "category": "PyTorch/ML",
     },
     {
         "name": "fastapi",
         "url": "https://github.com/tiangolo/fastapi.git",
         "description": "FastAPI framework (web APIs)",
         "test_files": ["fastapi/applications.py", "fastapi/routing.py"],
-        "category": "FastAPI/Web"
+        "category": "FastAPI/Web",
     },
     {
         "name": "httpx",
         "url": "https://github.com/encode/httpx.git",
         "description": "Async HTTP client",
         "test_files": ["httpx/_client.py", "httpx/_models.py"],
-        "category": "Async/HTTP"
+        "category": "Async/HTTP",
     },
     {
         "name": "pydantic",
         "url": "https://github.com/pydantic/pydantic.git",
         "description": "Data validation with type hints",
         "test_files": ["pydantic/main.py", "pydantic/fields.py"],
-        "category": "Pydantic/Validation"
+        "category": "Pydantic/Validation",
     },
     {
         "name": "flask",
         "url": "https://github.com/pallets/flask.git",
         "description": "Flask web framework",
         "test_files": ["src/flask/app.py", "src/flask/views.py"],
-        "category": "Flask/Web"
+        "category": "Flask/Web",
     },
     {
         "name": "transformers",
@@ -62,14 +61,14 @@ REPOS = [
         "description": "HuggingFace Transformers library",
         "test_files": ["src/transformers/models/bert/modeling_bert.py"],
         "category": "PyTorch/ML",
-        "depth": 1  # Shallow clone - it's huge
+        "depth": 1,  # Shallow clone - it's huge
     },
     {
         "name": "numpy-financial",
         "url": "https://github.com/numpy/numpy-financial.git",
         "description": "NumPy financial functions",
         "test_files": ["numpy_financial/_financial.py"],
-        "category": "NumPy/Scientific"
+        "category": "NumPy/Scientific",
     },
 ]
 
@@ -77,19 +76,21 @@ REPOS = [
 @dataclass
 class TestResult:
     """Result of testing a single file."""
+
     file: str
     success: bool
-    output_file: Optional[str] = None
-    error_message: Optional[str] = None
+    output_file: str | None = None
+    error_message: str | None = None
     parse_time: float = 0.0
     lines_of_code: int = 0
     output_lines: int = 0
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
 class RepoResult:
     """Results for an entire repository."""
+
     name: str
     category: str
     description: str
@@ -98,8 +99,8 @@ class RepoResult:
     files_tested: int = 0
     files_success: int = 0
     files_failed: int = 0
-    test_results: List[TestResult] = field(default_factory=list)
-    error_message: Optional[str] = None
+    test_results: list[TestResult] = field(default_factory=list)
+    error_message: str | None = None
 
 
 class RepoValidator:
@@ -108,9 +109,9 @@ class RepoValidator:
     def __init__(self, work_dir: Path):
         self.work_dir = work_dir
         self.work_dir.mkdir(exist_ok=True)
-        self.results: List[RepoResult] = []
+        self.results: list[RepoResult] = []
 
-    def clone_repo(self, repo: dict) -> tuple[bool, float, Optional[str]]:
+    def clone_repo(self, repo: dict) -> tuple[bool, float, str | None]:
         """Clone a repository."""
         repo_path = self.work_dir / repo["name"]
 
@@ -130,10 +131,7 @@ class RepoValidator:
             cmd.extend([repo["url"], str(repo_path)])
 
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 min timeout
+                cmd, capture_output=True, text=True, timeout=300  # 5 min timeout
             )
 
             elapsed = time.time() - start
@@ -154,7 +152,7 @@ class RepoValidator:
             return TestResult(
                 file=str(file_path.name),
                 success=False,
-                error_message=f"File not found: {file_path}"
+                error_message=f"File not found: {file_path}",
             )
 
         # Count lines
@@ -169,10 +167,17 @@ class RepoValidator:
 
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "pyshort.cli.decompile", str(file_path), "-o", str(output_file)],
+                [
+                    sys.executable,
+                    "-m",
+                    "pyshort.cli.decompile",
+                    str(file_path),
+                    "-o",
+                    str(output_file),
+                ],
                 capture_output=True,
                 text=True,
-                timeout=60  # 1 min per file
+                timeout=60,  # 1 min per file
             )
 
             elapsed = time.time() - start
@@ -180,7 +185,9 @@ class RepoValidator:
             # Check for warnings in output
             warnings = []
             if result.stderr:
-                warnings = [line for line in result.stderr.splitlines() if "warning" in line.lower()]
+                warnings = [
+                    line for line in result.stderr.splitlines() if "warning" in line.lower()
+                ]
 
             if result.returncode != 0:
                 return TestResult(
@@ -189,7 +196,7 @@ class RepoValidator:
                     error_message=result.stderr or result.stdout,
                     parse_time=elapsed,
                     lines_of_code=lines_of_code,
-                    warnings=warnings
+                    warnings=warnings,
                 )
 
             # Count output lines
@@ -207,7 +214,7 @@ class RepoValidator:
                 parse_time=elapsed,
                 lines_of_code=lines_of_code,
                 output_lines=output_lines,
-                warnings=warnings
+                warnings=warnings,
             )
 
         except subprocess.TimeoutExpired:
@@ -216,14 +223,14 @@ class RepoValidator:
                 success=False,
                 error_message="Timeout (60s)",
                 parse_time=60.0,
-                lines_of_code=lines_of_code
+                lines_of_code=lines_of_code,
             )
         except Exception as e:
             return TestResult(
                 file=file_path.name,
                 success=False,
                 error_message=str(e),
-                lines_of_code=lines_of_code
+                lines_of_code=lines_of_code,
             )
 
     def validate_repo(self, repo: dict) -> RepoResult:
@@ -237,7 +244,7 @@ class RepoValidator:
             name=repo["name"],
             category=repo["category"],
             description=repo["description"],
-            clone_success=False
+            clone_success=False,
         )
 
         # Clone repository
@@ -265,14 +272,20 @@ class RepoValidator:
 
             if test_result.success:
                 result.files_success += 1
-                compression = (1 - test_result.output_lines / test_result.lines_of_code) * 100 if test_result.lines_of_code > 0 else 0
-                print(f"    ✓ Success ({test_result.lines_of_code} → {test_result.output_lines} lines, {compression:.1f}% compression)")
+                compression = (
+                    (1 - test_result.output_lines / test_result.lines_of_code) * 100
+                    if test_result.lines_of_code > 0
+                    else 0
+                )
+                print(
+                    f"    ✓ Success ({test_result.lines_of_code} → {test_result.output_lines} lines, {compression:.1f}% compression)"
+                )
                 print(f"      Time: {test_result.parse_time:.3f}s")
                 if test_result.warnings:
                     print(f"      Warnings: {len(test_result.warnings)}")
             else:
                 result.files_failed += 1
-                print(f"    ✗ Failed")
+                print("    ✗ Failed")
                 if test_result.error_message:
                     # Print first 3 lines of error
                     error_lines = test_result.error_message.splitlines()[:3]
@@ -281,9 +294,9 @@ class RepoValidator:
 
         return result
 
-    def run_validation(self, repos: List[dict]) -> List[RepoResult]:
+    def run_validation(self, repos: list[dict]) -> list[RepoResult]:
         """Run validation on all repositories."""
-        print(f"\n🔍 PyShorthand Decompiler Validation")
+        print("\n🔍 PyShorthand Decompiler Validation")
         print(f"Testing {len(repos)} repositories")
         print(f"Work directory: {self.work_dir}\n")
 
@@ -318,11 +331,9 @@ class RepoValidator:
         for result in self.results:
             for test in result.test_results:
                 if not test.success:
-                    errors.append({
-                        "repo": result.name,
-                        "file": test.file,
-                        "error": test.error_message
-                    })
+                    errors.append(
+                        {"repo": result.name, "file": test.file, "error": test.error_message}
+                    )
 
         report = {
             "summary": {
@@ -331,7 +342,7 @@ class RepoValidator:
                 "total_files": total_files,
                 "success_files": success_files,
                 "failed_files": failed_files,
-                "success_rate": f"{success_rate:.1f}%"
+                "success_rate": f"{success_rate:.1f}%",
             },
             "by_category": by_category,
             "errors": errors,
@@ -352,13 +363,13 @@ class RepoValidator:
                             "output_lines": t.output_lines,
                             "parse_time": t.parse_time,
                             "error": t.error_message,
-                            "warnings_count": len(t.warnings)
+                            "warnings_count": len(t.warnings),
                         }
                         for t in r.test_results
-                    ]
+                    ],
                 }
                 for r in self.results
-            ]
+            ],
         }
 
         return report
@@ -368,7 +379,7 @@ class RepoValidator:
         report = self.generate_report()
 
         print(f"\n{'='*60}")
-        print(f"VALIDATION SUMMARY")
+        print("VALIDATION SUMMARY")
         print(f"{'='*60}\n")
 
         summary = report["summary"]
@@ -378,17 +389,17 @@ class RepoValidator:
         print(f"  ✗ Failed:  {summary['failed_files']}")
         print(f"Success rate: {summary['success_rate']}")
 
-        print(f"\nBy Category:")
+        print("\nBy Category:")
         for cat, stats in report["by_category"].items():
-            rate = (stats['success'] / stats['tested'] * 100) if stats['tested'] > 0 else 0
+            rate = (stats["success"] / stats["tested"] * 100) if stats["tested"] > 0 else 0
             print(f"  {cat:20s} {stats['success']}/{stats['tested']} ({rate:.1f}%)")
 
         if report["errors"]:
             print(f"\nErrors ({len(report['errors'])}):")
             for err in report["errors"][:10]:  # Show first 10
                 print(f"  • {err['repo']}/{err['file']}")
-                if err['error']:
-                    error_preview = err['error'].splitlines()[0][:80]
+                if err["error"]:
+                    error_preview = err["error"].splitlines()[0][:80]
                     print(f"    {error_preview}")
 
             if len(report["errors"]) > 10:

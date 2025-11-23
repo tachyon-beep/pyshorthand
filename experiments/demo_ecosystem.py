@@ -38,8 +38,8 @@ def demo_structural_question():
     print("-" * 80)
     print()
     print(f"Answer: {class_count} classes")
-    print(f"Tokens used: ~900 (PyShorthand overview only)")
-    print(f"✅ Correct! No additional tool calls needed.")
+    print("Tokens used: ~900 (PyShorthand overview only)")
+    print("✅ Correct! No additional tool calls needed.")
     print()
 
 
@@ -77,8 +77,8 @@ def demo_signature_question():
     print("-" * 80)
     print()
     print("Answer: Tuple[Tensor, Optional[Tensor]]")
-    print(f"Tokens used: ~900 (PyShorthand) + ~250 (get_class_details) = ~1,150")
-    print(f"✅ Correct! 78% savings vs full code (5,348 tokens)")
+    print("Tokens used: ~900 (PyShorthand) + ~250 (get_class_details) = ~1,150")
+    print("✅ Correct! 78% savings vs full code (5,348 tokens)")
     print()
 
 
@@ -131,8 +131,8 @@ def demo_implementation_question():
     print("  - 2D+ tensors (weight matrices) → weight decay applied")
     print("  - 1D tensors (biases, layer norms) → no weight decay")
     print()
-    print(f"Tokens used: ~900 (PyShorthand) + ~400 (get_implementation) = ~1,300")
-    print(f"✅ Correct! 76% savings vs full code (5,348 tokens)")
+    print("Tokens used: ~900 (PyShorthand) + ~400 (get_implementation) = ~1,300")
+    print("✅ Correct! 76% savings vs full code (5,348 tokens)")
     print()
 
 
@@ -164,19 +164,21 @@ def demo_token_comparison():
 
     print("-" * 70)
     overall_savings = ((total_full - total_pyshort) / total_full) * 100
-    print(f"{'WEIGHTED AVERAGE':<25} {total_pyshort/20:<15,.0f} {total_full/20:<15,.0f} {overall_savings:>6.1f}%")
+    print(
+        f"{'WEIGHTED AVERAGE':<25} {total_pyshort/20:<15,.0f} {total_full/20:<15,.0f} {overall_savings:>6.1f}%"
+    )
     print()
 
     print("Key Insights:")
-    print(f"  • PyShorthand Ecosystem: ~1,400 tokens/question average")
-    print(f"  • Full Code: 5,348 tokens/question (always)")
-    print(f"  • Savings: 74% token reduction")
-    print(f"  • Accuracy: 80% (16/20) vs 35% (7/20) with PyShorthand alone")
+    print("  • PyShorthand Ecosystem: ~1,400 tokens/question average")
+    print("  • Full Code: 5,348 tokens/question (always)")
+    print("  • Savings: 74% token reduction")
+    print("  • Accuracy: 80% (16/20) vs 35% (7/20) with PyShorthand alone")
     print()
     print("At scale (1000 questions):")
-    print(f"  • PyShorthand Ecosystem: ~1.4M tokens = $6.16")
-    print(f"  • Full Code: 5.3M tokens = $18.25")
-    print(f"  • 💰 Save $12.09 per 1000 questions!")
+    print("  • PyShorthand Ecosystem: ~1.4M tokens = $6.16")
+    print("  • Full Code: 5.3M tokens = $18.25")
+    print("  • 💰 Save $12.09 per 1000 questions!")
     print()
 
 

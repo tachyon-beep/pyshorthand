@@ -3,7 +3,6 @@
 Provides helpful, actionable error messages for common mistakes.
 """
 
-from typing import List, Optional, Tuple
 
 from pyshort.core.symbols import (
     VALID_LAYERS,
@@ -38,8 +37,8 @@ def levenshtein_distance(s1: str, s2: str) -> int:
 
 
 def find_close_matches(
-    word: str, possibilities: List[str], n: int = 3, cutoff: float = 0.6
-) -> List[str]:
+    word: str, possibilities: list[str], n: int = 3, cutoff: float = 0.6
+) -> list[str]:
     """Find close matches using Levenshtein distance.
 
     Args:
@@ -68,7 +67,7 @@ def find_close_matches(
     return [match for _, match in distances[:n]]
 
 
-def suggest_tag_for_operation(operation_name: str) -> Optional[str]:
+def suggest_tag_for_operation(operation_name: str) -> str | None:
     """Suggest an appropriate tag for an operation.
 
     Args:
@@ -82,12 +81,23 @@ def suggest_tag_for_operation(operation_name: str) -> Optional[str]:
     # Database operations
     if any(
         keyword in op_lower
-        for keyword in ["query", "execute", "commit", "rollback", "insert", "update", "delete", "select"]
+        for keyword in [
+            "query",
+            "execute",
+            "commit",
+            "rollback",
+            "insert",
+            "update",
+            "delete",
+            "select",
+        ]
     ):
         return "[IO:Disk]"
 
     # Network operations
-    if any(keyword in op_lower for keyword in ["fetch", "request", "http", "api", "socket", "download"]):
+    if any(
+        keyword in op_lower for keyword in ["fetch", "request", "http", "api", "socket", "download"]
+    ):
         return "[IO:Net]"
 
     # File operations
@@ -113,7 +123,7 @@ def suggest_tag_for_operation(operation_name: str) -> Optional[str]:
     return None
 
 
-def suggest_location_for_type(type_name: str) -> Optional[str]:
+def suggest_location_for_type(type_name: str) -> str | None:
     """Suggest an appropriate location for a type.
 
     Args:
@@ -137,8 +147,8 @@ def format_error_with_context(
     message: str,
     line: int,
     column: int,
-    source_line: Optional[str] = None,
-    suggestion: Optional[str] = None,
+    source_line: str | None = None,
+    suggestion: str | None = None,
 ) -> str:
     """Format an error message with context and visual indicators.
 
@@ -174,7 +184,7 @@ def format_error_with_context(
     return "\n".join(lines)
 
 
-def suggest_did_you_mean(word: str, category: str) -> Optional[str]:
+def suggest_did_you_mean(word: str, category: str) -> str | None:
     """Generate "Did you mean?" suggestion.
 
     Args:
@@ -208,7 +218,7 @@ def suggest_did_you_mean(word: str, category: str) -> Optional[str]:
         return f"Did you mean one of: '{options}'?"
 
 
-def suggest_missing_tag(operation_type: str) -> Optional[str]:
+def suggest_missing_tag(operation_type: str) -> str | None:
     """Suggest adding a tag to an operation.
 
     Args:
@@ -228,7 +238,7 @@ def suggest_missing_tag(operation_type: str) -> Optional[str]:
     return suggestions.get(operation_type)
 
 
-def suggest_complexity_tag(has_loop: bool, has_nested_loop: bool) -> Optional[str]:
+def suggest_complexity_tag(has_loop: bool, has_nested_loop: bool) -> str | None:
     """Suggest complexity tag based on structure.
 
     Args:
@@ -246,7 +256,7 @@ def suggest_complexity_tag(has_loop: bool, has_nested_loop: bool) -> Optional[st
     return None
 
 
-def suggest_location_annotation(var_name: str, has_type: bool) -> Optional[str]:
+def suggest_location_annotation(var_name: str, has_type: bool) -> str | None:
     """Suggest adding location annotation.
 
     Args:
@@ -275,7 +285,7 @@ class ErrorEnhancer:
     @staticmethod
     def enhance_parse_error(
         error_type: str, message: str, token_value: str, line: int, column: int
-    ) -> Tuple[str, Optional[str]]:
+    ) -> tuple[str, str | None]:
         """Enhance a parse error with suggestions.
 
         Args:

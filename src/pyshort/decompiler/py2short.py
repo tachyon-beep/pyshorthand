@@ -2,14 +2,14 @@
 
 import ast
 import re
-from typing import List, Dict, Optional, Set, Tuple
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
 class InferredType:
     """Type inference result with confidence."""
+
     type_spec: str
     confidence: float  # 0.0 to 1.0
     reason: str
@@ -27,12 +27,12 @@ class PyShorthandGenerator:
         """
         self.aggressive = aggressive
         self.with_confidence = with_confidence
-        self.imports: Set[str] = set()
-        self.local_classes: Set[str] = set()  # Classes defined in this module
-        self.dependencies: List[str] = []
-        self.import_map: Dict[str, str] = {}  # alias -> full module path
+        self.imports: set[str] = set()
+        self.local_classes: set[str] = set()  # Classes defined in this module
+        self.dependencies: list[str] = []
+        self.import_map: dict[str, str] = {}  # alias -> full module path
 
-    def generate(self, tree: ast.Module, source_file: Optional[str] = None) -> str:
+    def generate(self, tree: ast.Module, source_file: str | None = None) -> str:
         """Generate PyShorthand from Python AST.
 
         Args:
@@ -56,13 +56,13 @@ class PyShorthandGenerator:
         module_metadata = self._extract_module_metadata(tree, source_file)
 
         # Generate metadata header
-        module_name = module_metadata.get('name', 'UnnamedModule')
-        role = module_metadata.get('role', 'Core')
+        module_name = module_metadata.get("name", "UnnamedModule")
+        role = module_metadata.get("role", "Core")
         lines.append(f"# [M:{module_name}] [Role:{role}]")
 
         # Add risk if found
-        if 'risk' in module_metadata:
-            lines[-1] = lines[-1].rstrip(']') + f"] [Risk:{module_metadata['risk']}]"
+        if "risk" in module_metadata:
+            lines[-1] = lines[-1].rstrip("]") + f"] [Risk:{module_metadata['risk']}]"
 
         lines.append("")
 
@@ -75,7 +75,9 @@ class PyShorthandGenerator:
             lines.append("")
 
         # Extract module-level functions (including async functions)
-        functions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        functions = [
+            node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
 
         if functions:
             lines.append("# Module-level functions")
@@ -86,7 +88,7 @@ class PyShorthandGenerator:
 
         return "\n".join(lines)
 
-    def _extract_module_name(self, tree: ast.Module, source_file: Optional[str]) -> str:
+    def _extract_module_name(self, tree: ast.Module, source_file: str | None) -> str:
         """Extract module name from AST or file path."""
         # Try to find module name from docstring or file path
         if tree.body and isinstance(tree.body[0], ast.Expr):
@@ -94,10 +96,10 @@ class PyShorthandGenerator:
                 docstring = tree.body[0].value.value
                 if isinstance(docstring, str):
                     # Extract first line of docstring as module name
-                    first_line = docstring.strip().split('\n')[0]
+                    first_line = docstring.strip().split("\n")[0]
                     # Clean up common patterns
-                    if '.' in first_line:
-                        return first_line.split('.')[0]
+                    if "." in first_line:
+                        return first_line.split(".")[0]
                     return first_line[:50]  # Limit length
 
         # Fallback to file name
@@ -127,12 +129,14 @@ class PyShorthandGenerator:
                         full_name = f"{node.module}.{imported_name}"
                         self.import_map[as_name] = full_name
 
-    def _extract_module_metadata(self, tree: ast.Module, source_file: Optional[str]) -> Dict[str, str]:
+    def _extract_module_metadata(
+        self, tree: ast.Module, source_file: str | None
+    ) -> dict[str, str]:
         """Extract metadata from module docstring and file."""
         metadata = {}
 
         # Get module name
-        metadata['name'] = self._extract_module_name(tree, source_file)
+        metadata["name"] = self._extract_module_name(tree, source_file)
 
         # Try to extract metadata from docstring
         if tree.body and isinstance(tree.body[0], ast.Expr):
@@ -145,7 +149,7 @@ class PyShorthandGenerator:
 
         return metadata
 
-    def _extract_docstring_tags(self, docstring: str) -> Dict[str, str]:
+    def _extract_docstring_tags(self, docstring: str) -> dict[str, str]:
         """Extract PyShorthand tags from docstring.
 
         Recognizes patterns like:
@@ -157,23 +161,25 @@ class PyShorthandGenerator:
         tags = {}
 
         # Role pattern
-        role_match = re.search(r'Role:\s*(Core|Service|Util|API|Logic|Data)', docstring, re.IGNORECASE)
+        role_match = re.search(
+            r"Role:\s*(Core|Service|Util|API|Logic|Data)", docstring, re.IGNORECASE
+        )
         if role_match:
-            tags['role'] = role_match.group(1).capitalize()
+            tags["role"] = role_match.group(1).capitalize()
 
         # Risk pattern
-        risk_match = re.search(r'Risk:\s*(High|Med|Low)', docstring, re.IGNORECASE)
+        risk_match = re.search(r"Risk:\s*(High|Med|Low)", docstring, re.IGNORECASE)
         if risk_match:
-            tags['risk'] = risk_match.group(1).capitalize()
+            tags["risk"] = risk_match.group(1).capitalize()
 
         # Layer pattern
-        layer_match = re.search(r'Layer:\s*(API|Logic|Data)', docstring, re.IGNORECASE)
+        layer_match = re.search(r"Layer:\s*(API|Logic|Data)", docstring, re.IGNORECASE)
         if layer_match:
-            tags['layer'] = layer_match.group(1)
+            tags["layer"] = layer_match.group(1)
 
         return tags
 
-    def _generate_entity(self, cls: ast.ClassDef, tree: ast.Module) -> List[str]:
+    def _generate_entity(self, cls: ast.ClassDef, tree: ast.Module) -> list[str]:
         """Generate PyShorthand entity from Python class.
 
         v1.5 enhancements:
@@ -240,13 +246,15 @@ class PyShorthandGenerator:
             lines.append("  # No typed attributes found")
 
         # Extract methods as comments (parser doesn't support F:name syntax in entities yet)
-        methods = [node for node in cls.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        methods = [
+            node for node in cls.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
 
         if methods:
             lines.append("")
             lines.append("  # Methods:")
             for method in methods:
-                if method.name.startswith('_') and method.name != '__init__':
+                if method.name.startswith("_") and method.name != "__init__":
                     continue  # Skip private methods except __init__
 
                 # Generate signature with v1.4 tags
@@ -255,7 +263,7 @@ class PyShorthandGenerator:
 
         return lines
 
-    def _extract_class_dependencies(self, cls: ast.ClassDef) -> List[str]:
+    def _extract_class_dependencies(self, cls: ast.ClassDef) -> list[str]:
         """Extract dependencies from base classes."""
         dependencies = []
 
@@ -273,7 +281,7 @@ class PyShorthandGenerator:
                     current = current.value
                 if isinstance(current, ast.Name):
                     parts.insert(0, current.id)
-                dep_name = '.'.join(parts)
+                dep_name = ".".join(parts)
 
             if dep_name:
                 # If it's a local class, use [Ref:Name]
@@ -283,13 +291,13 @@ class PyShorthandGenerator:
                 elif dep_name in self.import_map:
                     # For common frameworks, simplify
                     full_name = self.import_map[dep_name]
-                    if 'fastapi' in full_name.lower():
+                    if "fastapi" in full_name.lower():
                         dependencies.append("[Ref:FastAPI]")
-                    elif 'pydantic' in full_name.lower():
+                    elif "pydantic" in full_name.lower():
                         dependencies.append("[Ref:Pydantic]")
-                    elif 'torch.nn' in full_name.lower() or 'nn.Module' in dep_name:
+                    elif "torch.nn" in full_name.lower() or "nn.Module" in dep_name:
                         dependencies.append("[Ref:PyTorch]")
-                    elif 'flask' in full_name.lower():
+                    elif "flask" in full_name.lower():
                         dependencies.append("[Ref:Flask]")
                     else:
                         # Generic external dependency
@@ -297,7 +305,7 @@ class PyShorthandGenerator:
 
         return dependencies
 
-    def _extract_base_classes(self, cls: ast.ClassDef) -> List[str]:
+    def _extract_base_classes(self, cls: ast.ClassDef) -> list[str]:
         """Extract base classes for v1.5 inheritance notation.
 
         Args:
@@ -322,15 +330,15 @@ class PyShorthandGenerator:
                     current = current.value
                 if isinstance(current, ast.Name):
                     parts.insert(0, current.id)
-                base_name = '.'.join(parts)
+                base_name = ".".join(parts)
             elif isinstance(base, ast.Subscript):
                 # Handle Generic[T], Protocol[T], etc. - skip these
                 # Generic/Protocol are handled separately
                 continue
 
-            if base_name and base_name not in ('Generic', 'Protocol'):
+            if base_name and base_name not in ("Generic", "Protocol"):
                 # Filter out ABC if already marked as abstract
-                if base_name not in ('ABC', 'abc.ABC') or not self._is_abstract_class(cls):
+                if base_name not in ("ABC", "abc.ABC") or not self._is_abstract_class(cls):
                     bases.append(base_name)
 
         return bases
@@ -346,20 +354,18 @@ class PyShorthandGenerator:
         """
         # Check if inherits from ABC
         for base in cls.bases:
-            if isinstance(base, ast.Name) and base.id in ('ABC',):
+            if isinstance(base, ast.Name) and base.id in ("ABC",):
                 return True
             elif isinstance(base, ast.Attribute):
                 # Check for abc.ABC
-                if base.attr == 'ABC':
+                if base.attr == "ABC":
                     return True
 
         # Check for @abstractmethod decorators
         for node in cls.body:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for dec in node.decorator_list:
-                    if isinstance(dec, ast.Name) and 'abstract' in dec.id.lower():
-                        return True
-                    elif isinstance(dec, ast.Attribute) and 'abstract' in dec.attr.lower():
+                    if isinstance(dec, ast.Name) and "abstract" in dec.id.lower() or isinstance(dec, ast.Attribute) and "abstract" in dec.attr.lower():
                         return True
 
         return False
@@ -374,18 +380,16 @@ class PyShorthandGenerator:
             True if class inherits from Protocol
         """
         for base in cls.bases:
-            if isinstance(base, ast.Name) and base.id == 'Protocol':
-                return True
-            elif isinstance(base, ast.Attribute) and base.attr == 'Protocol':
+            if isinstance(base, ast.Name) and base.id == "Protocol" or isinstance(base, ast.Attribute) and base.attr == "Protocol":
                 return True
             elif isinstance(base, ast.Subscript):
                 # Handle Protocol[T]
-                if isinstance(base.value, ast.Name) and base.value.id == 'Protocol':
+                if isinstance(base.value, ast.Name) and base.value.id == "Protocol":
                     return True
 
         return False
 
-    def _extract_generic_params(self, cls: ast.ClassDef) -> List[str]:
+    def _extract_generic_params(self, cls: ast.ClassDef) -> list[str]:
         """Extract generic type parameters from class (v1.5).
 
         Args:
@@ -397,7 +401,7 @@ class PyShorthandGenerator:
         for base in cls.bases:
             if isinstance(base, ast.Subscript):
                 # Check if this is Generic[T] or Generic[T, U]
-                if isinstance(base.value, ast.Name) and base.value.id == 'Generic':
+                if isinstance(base.value, ast.Name) and base.value.id == "Generic":
                     params = []
                     if isinstance(base.slice, ast.Tuple):
                         # Generic[T, U, V]
@@ -414,10 +418,10 @@ class PyShorthandGenerator:
     def _is_dataclass(self, cls: ast.ClassDef) -> bool:
         """Check if class is a dataclass."""
         for decorator in cls.decorator_list:
-            if isinstance(decorator, ast.Name) and decorator.id == 'dataclass':
+            if isinstance(decorator, ast.Name) and decorator.id == "dataclass":
                 return True
             elif isinstance(decorator, ast.Call):
-                if isinstance(decorator.func, ast.Name) and decorator.func.id == 'dataclass':
+                if isinstance(decorator.func, ast.Name) and decorator.func.id == "dataclass":
                     return True
         return False
 
@@ -425,10 +429,10 @@ class PyShorthandGenerator:
         """Check if class is a Pydantic model."""
         for base in cls.bases:
             if isinstance(base, ast.Name):
-                if 'BaseModel' in base.id or 'Pydantic' in base.id:
+                if "BaseModel" in base.id or "Pydantic" in base.id:
                     return True
             elif isinstance(base, ast.Attribute):
-                if base.attr == 'BaseModel':
+                if base.attr == "BaseModel":
                     return True
         return False
 
@@ -440,7 +444,7 @@ class PyShorthandGenerator:
                     return True
         return False
 
-    def _detect_web_framework(self, cls: ast.ClassDef) -> Optional[str]:
+    def _detect_web_framework(self, cls: ast.ClassDef) -> str | None:
         """Detect which web framework this class uses."""
         # Check base classes
         for base in cls.bases:
@@ -450,11 +454,11 @@ class PyShorthandGenerator:
             elif isinstance(base, ast.Attribute):
                 base_name = base.attr
 
-            if 'APIRouter' in base_name or 'FastAPI' in base_name:
+            if "APIRouter" in base_name or "FastAPI" in base_name:
                 return "FastAPI"
-            elif 'Flask' in base_name or 'Blueprint' in base_name:
+            elif "Flask" in base_name or "Blueprint" in base_name:
                 return "Flask"
-            elif 'APIView' in base_name or 'ViewSet' in base_name:
+            elif "APIView" in base_name or "ViewSet" in base_name:
                 return "Django REST"
 
         # Check decorators on methods
@@ -467,12 +471,12 @@ class PyShorthandGenerator:
                     elif isinstance(dec, ast.Attribute):
                         dec_name = dec.attr
 
-                    if dec_name in ('get', 'post', 'put', 'delete', 'patch'):
+                    if dec_name in ("get", "post", "put", "delete", "patch"):
                         return "FastAPI/Flask"
 
         return None
 
-    def _extract_state_variables(self, cls: ast.ClassDef, is_special: bool = False) -> List[str]:
+    def _extract_state_variables(self, cls: ast.ClassDef, is_special: bool = False) -> list[str]:
         """Extract state variables from class.
 
         Looks for:
@@ -502,7 +506,7 @@ class PyShorthandGenerator:
         # 2. Instance attributes in __init__
         init_method = None
         for node in cls.body:
-            if isinstance(node, ast.FunctionDef) and node.name == '__init__':
+            if isinstance(node, ast.FunctionDef) and node.name == "__init__":
                 init_method = node
                 break
 
@@ -512,7 +516,7 @@ class PyShorthandGenerator:
                 if isinstance(node, ast.Assign):
                     for target in node.targets:
                         if isinstance(target, ast.Attribute):
-                            if isinstance(target.value, ast.Name) and target.value.id == 'self':
+                            if isinstance(target.value, ast.Name) and target.value.id == "self":
                                 attr_name = target.attr
 
                                 # Try to infer type from assignment
@@ -525,7 +529,10 @@ class PyShorthandGenerator:
                 # Also handle annotated assignments in __init__
                 elif isinstance(node, ast.AnnAssign):
                     if isinstance(node.target, ast.Attribute):
-                        if isinstance(node.target.value, ast.Name) and node.target.value.id == 'self':
+                        if (
+                            isinstance(node.target.value, ast.Name)
+                            and node.target.value.id == "self"
+                        ):
                             attr_name = node.target.attr
                             type_spec = self._convert_type_annotation(node.annotation)
 
@@ -547,7 +554,7 @@ class PyShorthandGenerator:
         # Extract parameters
         params = []
         for arg in func.args.args:
-            if arg.arg == 'self':
+            if arg.arg == "self":
                 continue
 
             param_str = arg.arg
@@ -574,7 +581,7 @@ class PyShorthandGenerator:
 
         return sig
 
-    def _extract_function_tags(self, func: ast.FunctionDef) -> List[str]:
+    def _extract_function_tags(self, func: ast.FunctionDef) -> list[str]:
         """Extract all v1.4 tags for a function.
 
         Tags are ordered: Decorator → Route → Operation → Complexity
@@ -607,7 +614,7 @@ class PyShorthandGenerator:
 
         return tags
 
-    def _extract_decorator_tags(self, func: ast.FunctionDef) -> List[str]:
+    def _extract_decorator_tags(self, func: ast.FunctionDef) -> list[str]:
         """Extract decorator tags from function decorators.
 
         Recognizes:
@@ -647,18 +654,18 @@ class PyShorthandGenerator:
 
             if dec_name:
                 # Map Python decorators to PyShorthand decorator tags
-                if dec_name == 'property':
+                if dec_name == "property":
                     tags.append("[Prop]")
-                elif dec_name == 'staticmethod':
+                elif dec_name == "staticmethod":
                     tags.append("[Static]")
-                elif dec_name == 'classmethod':
+                elif dec_name == "classmethod":
                     tags.append("[Class]")
-                elif dec_name in ('cached_property', 'lru_cache', 'cache'):
+                elif dec_name in ("cached_property", "lru_cache", "cache"):
                     # Check for TTL or maxsize arguments
                     if isinstance(decorator, ast.Call):
                         # Look for maxsize or ttl keyword arg
                         for kw in decorator.keywords:
-                            if kw.arg in ('maxsize', 'ttl'):
+                            if kw.arg in ("maxsize", "ttl"):
                                 if isinstance(kw.value, ast.Constant):
                                     tags.append(f"[Cached:TTL:{kw.value.value}]")
                                     break
@@ -666,17 +673,22 @@ class PyShorthandGenerator:
                             tags.append("[Cached]")
                     else:
                         tags.append("[Cached]")
-                elif dec_name in ('login_required', 'require_auth', 'authenticated', 'auth_required'):
+                elif dec_name in (
+                    "login_required",
+                    "require_auth",
+                    "authenticated",
+                    "auth_required",
+                ):
                     tags.append("[Auth]")
                 # Skip HTTP route decorators (handled separately)
-                elif dec_name not in ('get', 'post', 'put', 'delete', 'patch', 'route'):
+                elif dec_name not in ("get", "post", "put", "delete", "patch", "route"):
                     # Custom decorator - add as-is if not too generic
-                    if dec_name not in ('wraps', 'contextmanager'):
+                    if dec_name not in ("wraps", "contextmanager"):
                         tags.append(f"[{dec_name}]")
 
         return tags
 
-    def _extract_http_route_tag(self, func: ast.FunctionDef) -> Optional[str]:
+    def _extract_http_route_tag(self, func: ast.FunctionDef) -> str | None:
         """Extract HTTP route tag from web framework decorators.
 
         Recognizes:
@@ -697,7 +709,7 @@ class PyShorthandGenerator:
                     http_method = decorator.func.attr.upper()
 
                     # Check if it's an HTTP method
-                    if http_method in ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'):
+                    if http_method in ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"):
                         # Extract path from first argument
                         if decorator.args and isinstance(decorator.args[0], ast.Constant):
                             path = decorator.args[0].value
@@ -705,9 +717,9 @@ class PyShorthandGenerator:
                         return f"[{http_method}]"
 
                     # @route decorator with methods argument
-                    elif http_method == 'ROUTE':
+                    elif http_method == "ROUTE":
                         path = None
-                        method = 'GET'  # Default
+                        method = "GET"  # Default
 
                         # Extract path from first argument
                         if decorator.args and isinstance(decorator.args[0], ast.Constant):
@@ -715,7 +727,7 @@ class PyShorthandGenerator:
 
                         # Look for methods keyword argument
                         for kw in decorator.keywords:
-                            if kw.arg == 'methods':
+                            if kw.arg == "methods":
                                 if isinstance(kw.value, ast.List):
                                     # Get first method
                                     if kw.value.elts and isinstance(kw.value.elts[0], ast.Constant):
@@ -726,7 +738,7 @@ class PyShorthandGenerator:
 
         return None
 
-    def _extract_operation_tags(self, func: ast.FunctionDef) -> List[str]:
+    def _extract_operation_tags(self, func: ast.FunctionDef) -> list[str]:
         """Extract operation tags by analyzing function body.
 
         Detects:
@@ -760,21 +772,23 @@ class PyShorthandGenerator:
                 func_name = self._get_name(node.func)
 
                 # File I/O
-                if any(io_op in func_name.lower() for io_op in ['open', 'read', 'write', 'file']):
+                if any(io_op in func_name.lower() for io_op in ["open", "read", "write", "file"]):
                     has_io = True
 
                 # Network I/O (only if calling actual network functions, not just containing words)
-                if any(func_name.lower().startswith(net_op) or f'.{net_op}' in func_name.lower()
-                       for net_op in ['request', 'fetch', 'socket', 'urlopen', 'get(', 'post(']):
-                    if 'Net' not in str(tags):
+                if any(
+                    func_name.lower().startswith(net_op) or f".{net_op}" in func_name.lower()
+                    for net_op in ["request", "fetch", "socket", "urlopen", "get(", "post("]
+                ):
+                    if "Net" not in str(tags):
                         tags.append("[IO:Net]")
 
                 # Torch operations
-                if 'torch' in func_name.lower() or func_name in ('matmul', 'mm', 'bmm'):
+                if "torch" in func_name.lower() or func_name in ("matmul", "mm", "bmm"):
                     has_torch = True
 
                 # Matrix multiplication
-                if func_name in ('matmul', 'mm', 'bmm', 'dot'):
+                if func_name in ("matmul", "mm", "bmm", "dot"):
                     has_matmul = True
 
             # Detect async operations
@@ -785,7 +799,7 @@ class PyShorthandGenerator:
         if has_torch:
             # Check for gradient operations
             has_gradient = any(
-                isinstance(node, ast.Attribute) and node.attr in ('backward', 'grad')
+                isinstance(node, ast.Attribute) and node.attr in ("backward", "grad")
                 for node in ast.walk(func)
             )
             if has_gradient and has_matmul:
@@ -798,7 +812,7 @@ class PyShorthandGenerator:
         elif has_matmul:
             tags.append("[Lin:MatMul]")
 
-        if has_io and not any('IO:Net' in t for t in tags):
+        if has_io and not any("IO:Net" in t for t in tags):
             tags.append("[IO:Disk]")
 
         if has_loops:
@@ -814,7 +828,7 @@ class PyShorthandGenerator:
 
         return tags
 
-    def _extract_complexity_tag(self, func: ast.FunctionDef) -> Optional[str]:
+    def _extract_complexity_tag(self, func: ast.FunctionDef) -> str | None:
         """Extract complexity tag from docstring or analyze function body.
 
         Looks for:
@@ -831,19 +845,19 @@ class PyShorthandGenerator:
         docstring = ast.get_docstring(func)
         if docstring:
             # Look for O(...) pattern
-            complexity_match = re.search(r'O\([^)]+\)', docstring)
+            complexity_match = re.search(r"O\([^)]+\)", docstring)
             if complexity_match:
                 complexity = complexity_match.group(0)
                 return f"[{complexity}]"
 
             # Look for complexity annotations like "Complexity: O(N)"
-            complexity_match = re.search(r'Complexity:\s*(O\([^)]+\))', docstring, re.IGNORECASE)
+            complexity_match = re.search(r"Complexity:\s*(O\([^)]+\))", docstring, re.IGNORECASE)
             if complexity_match:
                 complexity = complexity_match.group(1)
                 return f"[{complexity}]"
 
             # Look for "Time: O(N)" or "Runtime: O(N)"
-            time_match = re.search(r'(?:Time|Runtime):\s*(O\([^)]+\))', docstring, re.IGNORECASE)
+            time_match = re.search(r"(?:Time|Runtime):\s*(O\([^)]+\))", docstring, re.IGNORECASE)
             if time_match:
                 complexity = time_match.group(1)
                 return f"[{complexity}]"
@@ -923,7 +937,7 @@ class PyShorthandGenerator:
 
             # Handle Optional[T] - extract the inner type
             # Supports: Optional[T], typing.Optional[T]
-            if base == 'Optional' or base.endswith('.Optional'):
+            if base == "Optional" or base.endswith(".Optional"):
                 if isinstance(annotation.slice, ast.Name):
                     inner_type = annotation.slice.id
                     # Check if it's a local class
@@ -933,19 +947,19 @@ class PyShorthandGenerator:
                 return "Unknown?"
 
             # Handle Union[X, None] - equivalent to Optional[X]
-            if base == 'Union' or base.endswith('.Union'):
+            if base == "Union" or base.endswith(".Union"):
                 # Check if it's Union[X, None] pattern
                 if isinstance(annotation.slice, ast.Tuple):
                     types_in_union = annotation.slice.elts
                     # Look for None type
                     has_none = any(
-                        isinstance(t, ast.Constant) and t.value is None
-                        for t in types_in_union
+                        isinstance(t, ast.Constant) and t.value is None for t in types_in_union
                     )
                     if has_none and len(types_in_union) == 2:
                         # This is Union[X, None], equivalent to Optional[X]
                         non_none_type = next(
-                            t for t in types_in_union
+                            t
+                            for t in types_in_union
                             if not (isinstance(t, ast.Constant) and t.value is None)
                         )
                         if isinstance(non_none_type, ast.Name):
@@ -962,23 +976,23 @@ class PyShorthandGenerator:
                 return "Unknown"
 
             # Handle List, Tuple, etc.
-            if base in ('List', 'list'):
+            if base in ("List", "list"):
                 # Try to get element type
                 if isinstance(annotation.slice, ast.Name):
                     elem_type = self._map_python_type(annotation.slice.id)
-                    return f"list"  # Just use list type without shape
+                    return "list"  # Just use list type without shape
                 return "list"
 
             # Handle Tensor, torch.Tensor, etc.
-            if 'Tensor' in base or 'tensor' in base.lower():
+            if "Tensor" in base or "tensor" in base.lower():
                 return "f32[N]@GPU"  # Default to GPU tensor with unknown shape N
 
         # Handle attribute access: torch.Tensor, np.ndarray
         if isinstance(annotation, ast.Attribute):
             full_name = self._get_attribute_name(annotation)
-            if 'Tensor' in full_name:
+            if "Tensor" in full_name:
                 return "f32[N]@GPU"
-            if 'ndarray' in full_name:
+            if "ndarray" in full_name:
                 return "f32[N]@CPU"
 
         # Fallback
@@ -994,13 +1008,13 @@ class PyShorthandGenerator:
             PyShorthand type name
         """
         type_map = {
-            'int': 'i32',
-            'float': 'f32',
-            'str': 'str',
-            'bool': 'bool',
-            'list': 'list',
-            'dict': 'dict',
-            'tuple': 'tuple',
+            "int": "i32",
+            "float": "f32",
+            "str": "str",
+            "bool": "bool",
+            "list": "list",
+            "dict": "dict",
+            "tuple": "tuple",
         }
         return type_map.get(python_type, python_type)
 
@@ -1042,27 +1056,27 @@ class PyShorthandGenerator:
                 return f"[Ref:{func_name}]"
 
             # torch.zeros, torch.ones, etc.
-            if 'zeros' in func_name or 'ones' in func_name or 'randn' in func_name:
+            if "zeros" in func_name or "ones" in func_name or "randn" in func_name:
                 return "f32[N]@GPU"
 
             # numpy arrays
-            if 'array' in func_name:
+            if "array" in func_name:
                 return "f32[N]@CPU"
 
             # PyTorch nn.Module components
-            if 'Linear' in func_name:
+            if "Linear" in func_name:
                 return "Linear"  # nn.Linear
-            if 'Conv' in func_name:
+            if "Conv" in func_name:
                 return "Conv"  # nn.Conv2d, etc.
-            if 'LayerNorm' in func_name or 'BatchNorm' in func_name:
+            if "LayerNorm" in func_name or "BatchNorm" in func_name:
                 return "Norm"  # Normalization layers
-            if 'ModuleList' in func_name:
+            if "ModuleList" in func_name:
                 return "ModuleList"
-            if 'Embedding' in func_name:
+            if "Embedding" in func_name:
                 return "Embedding"
-            if 'Dropout' in func_name:
+            if "Dropout" in func_name:
                 return "Dropout"
-            if 'Attention' in func_name:
+            if "Attention" in func_name:
                 return "Attention"
 
         return "Unknown"  # Use 'Unknown' as valid identifier instead of '?'
@@ -1102,7 +1116,9 @@ def decompile(source: str, aggressive: bool = False) -> str:
     return generator.generate(tree)
 
 
-def decompile_file(input_path: str, output_path: Optional[str] = None, aggressive: bool = False) -> str:
+def decompile_file(
+    input_path: str, output_path: str | None = None, aggressive: bool = False
+) -> str:
     """Decompile Python file to PyShorthand.
 
     Args:
@@ -1119,12 +1135,12 @@ def decompile_file(input_path: str, output_path: Optional[str] = None, aggressiv
         RuntimeError: If output file cannot be written
     """
     try:
-        with open(input_path, 'r', encoding='utf-8') as f:
+        with open(input_path, encoding="utf-8") as f:
             source = f.read()
-    except IOError as e:
-        raise IOError(f"Cannot read input file '{input_path}': {e}")
+    except OSError as e:
+        raise OSError(f"Cannot read input file '{input_path}': {e}")
     except UnicodeDecodeError as e:
-        raise IOError(f"Cannot decode input file '{input_path}' as UTF-8: {e}")
+        raise OSError(f"Cannot decode input file '{input_path}' as UTF-8: {e}")
 
     try:
         tree = ast.parse(source, filename=input_path)
@@ -1136,9 +1152,9 @@ def decompile_file(input_path: str, output_path: Optional[str] = None, aggressiv
 
     if output_path:
         try:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(result)
-        except IOError as e:
+        except OSError as e:
             raise RuntimeError(f"Cannot write output file '{output_path}': {e}")
 
     return result

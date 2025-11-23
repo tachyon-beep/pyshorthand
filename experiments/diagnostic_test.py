@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +21,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from diagnostic_questions import load_diagnostic_suite
+
 from pyshort.ecosystem.tools import CodebaseExplorer
 
 
@@ -77,7 +78,9 @@ class AggressiveDiagnosticAgent:
         print(f"\n{'='*80}")
         print(f"Q{question.id}: {question.question}")
         print(f"{'='*80}")
-        print(f"Difficulty: Crosses {question.crosses_files} files, Implementation={question.needs_implementation}")
+        print(
+            f"Difficulty: Crosses {question.crosses_files} files, Implementation={question.needs_implementation}"
+        )
         print(f"Expected tools: {question.expected_tools}")
         print()
 
@@ -162,7 +165,7 @@ Think carefully about what information you need. Don't hesitate to call multiple
             if "REASONING:" in content:
                 reasoning_section = content.split("REASONING:")[1].split("TOOL_CALLS:")[0].strip()
                 reasoning_trace = reasoning_section
-                print(f"🧠 REASONING:")
+                print("🧠 REASONING:")
                 print(f"   {reasoning_section[:300]}...")
                 print()
 
@@ -174,7 +177,7 @@ Think carefully about what information you need. Don't hesitate to call multiple
             if "TOOL_CALLS:" in content:
                 tool_section = content.split("TOOL_CALLS:")[1].split("ANSWER:")[0].strip()
 
-                print(f"🔧 TOOL CALLS REQUESTED:")
+                print("🔧 TOOL CALLS REQUESTED:")
                 print(f"   {tool_section}")
                 print()
 
@@ -191,12 +194,18 @@ Think carefully about what information you need. Don't hesitate to call multiple
                             class_name = parts.split(",")[0].strip()
                             expand = "expand_nested=True" in parts or "True" in parts
 
-                            details = self.explorer.get_class_details(class_name, expand_nested=expand)
+                            details = self.explorer.get_class_details(
+                                class_name, expand_nested=expand
+                            )
                             if details:
-                                tool_outputs.append(f"# get_class_details({class_name}):\n{details}")
+                                tool_outputs.append(
+                                    f"# get_class_details({class_name}):\n{details}"
+                                )
                                 tools_called.append(f"get_class_details({class_name})")
                                 tool_tokens += len(details.split())
-                                print(f"   ✓ Fetched get_class_details({class_name}) - {len(details)} chars")
+                                print(
+                                    f"   ✓ Fetched get_class_details({class_name}) - {len(details)} chars"
+                                )
 
                         elif "get_implementation(" in line:
                             target = line.split("get_implementation(")[1].split(")")[0].strip()
@@ -205,7 +214,9 @@ Think carefully about what information you need. Don't hesitate to call multiple
                                 tool_outputs.append(f"# get_implementation({target}):\n{impl}")
                                 tools_called.append(f"get_implementation({target})")
                                 tool_tokens += len(impl.split())
-                                print(f"   ✓ Fetched get_implementation({target}) - {len(impl)} chars")
+                                print(
+                                    f"   ✓ Fetched get_implementation({target}) - {len(impl)} chars"
+                                )
 
                         elif "search_usage(" in line:
                             symbol = line.split("search_usage(")[1].split(")")[0].strip()
@@ -215,13 +226,15 @@ Think carefully about what information you need. Don't hesitate to call multiple
                                 tool_outputs.append(f"# search_usage({symbol}):\n{usage_text}")
                                 tools_called.append(f"search_usage({symbol})")
                                 tool_tokens += len(usage_text.split())
-                                print(f"   ✓ Fetched search_usage({symbol}) - {len(usages)} results")
+                                print(
+                                    f"   ✓ Fetched search_usage({symbol}) - {len(usages)} results"
+                                )
 
             # If tools were called, make follow-up API call
             final_answer = content
             if tool_outputs:
                 print()
-                print(f"💭 SYNTHESIZING ANSWER WITH TOOL RESULTS...")
+                print("💭 SYNTHESIZING ANSWER WITH TOOL RESULTS...")
                 print()
 
                 tool_results = "\n\n".join(tool_outputs)
@@ -232,7 +245,10 @@ Think carefully about what information you need. Don't hesitate to call multiple
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt},
                         {"role": "assistant", "content": content},
-                        {"role": "user", "content": f"Here are the tool results:\n\n{tool_results}\n\nNow provide your final answer."}
+                        {
+                            "role": "user",
+                            "content": f"Here are the tool results:\n\n{tool_results}\n\nNow provide your final answer.",
+                        },
                     ],
                     extra_body={"reasoning": {"enabled": True}},
                 )
@@ -271,10 +287,12 @@ Think carefully about what information you need. Don't hesitate to call multiple
             status = "✅" if is_correct else "❌"
             print(f"{status} ANSWER: {answer[:200]}...")
             print()
-            print(f"📊 METRICS:")
+            print("📊 METRICS:")
             print(f"   Tools called: {len(tools_called)}")
             print(f"   Tool selection: {quality}")
-            print(f"   Total tokens: {total_tokens} ({self.pyshorthand_tokens} base + {tool_tokens} tools)")
+            print(
+                f"   Total tokens: {total_tokens} ({self.pyshorthand_tokens} base + {tool_tokens} tools)"
+            )
             print(f"   Correct: {is_correct}")
 
             return DiagnosticResult(
@@ -294,6 +312,7 @@ Think carefully about what information you need. Don't hesitate to call multiple
         except Exception as e:
             print(f"❌ ERROR: {e}")
             import traceback
+
             traceback.print_exc()
 
             return DiagnosticResult(
@@ -343,9 +362,9 @@ def main():
 
     # Summary
     print()
-    print("="*80)
+    print("=" * 80)
     print("DIAGNOSTIC SUMMARY")
-    print("="*80)
+    print("=" * 80)
     print()
 
     correct = sum(1 for r in results if r.is_correct)
@@ -376,11 +395,15 @@ def main():
 
     if impl_questions:
         impl_correct = sum(1 for r in impl_questions if r.is_correct)
-        print(f"Implementation questions: {impl_correct}/{len(impl_questions)} ({impl_correct/len(impl_questions)*100:.0f}%)")
+        print(
+            f"Implementation questions: {impl_correct}/{len(impl_questions)} ({impl_correct/len(impl_questions)*100:.0f}%)"
+        )
 
     if struct_questions:
         struct_correct = sum(1 for r in struct_questions if r.is_correct)
-        print(f"Structural questions: {struct_correct}/{len(struct_questions)} ({struct_correct/len(struct_questions)*100:.0f}%)")
+        print(
+            f"Structural questions: {struct_correct}/{len(struct_questions)} ({struct_correct/len(struct_questions)*100:.0f}%)"
+        )
     print()
 
     # Save results

@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pyshort.indexer import index_repository, RepositoryIndexer
+from pyshort.indexer import RepositoryIndexer
 
 
 def main():
@@ -28,64 +28,45 @@ Examples:
 
   # Verbose output
   pyshort-index . -v
-        """
+        """,
     )
 
-    parser.add_argument(
-        "repo_path",
-        help="Path to repository root"
-    )
+    parser.add_argument("repo_path", help="Path to repository root")
+
+    parser.add_argument("-o", "--output", help="Output JSON file for index")
 
     parser.add_argument(
-        "-o", "--output",
-        help="Output JSON file for index"
-    )
-
-    parser.add_argument(
-        "-r", "--report",
-        action="store_true",
-        help="Generate human-readable report"
+        "-r", "--report", action="store_true", help="Generate human-readable report"
     )
 
     parser.add_argument(
         "--generate-pys",
         action="store_true",
-        help="Generate PyShorthand files for all Python files"
+        help="Generate PyShorthand files for all Python files",
     )
 
     parser.add_argument(
-        "--output-dir",
-        help="Output directory for PyShorthand files (with --generate-pys)"
+        "--output-dir", help="Output directory for PyShorthand files (with --generate-pys)"
     )
 
     parser.add_argument(
-        "--exclude",
-        nargs="+",
-        help="Additional patterns to exclude (e.g., 'tests' 'docs')"
+        "--exclude", nargs="+", help="Additional patterns to exclude (e.g., 'tests' 'docs')"
+    )
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+
+    parser.add_argument(
+        "--stats-only", action="store_true", help="Only show statistics, don't generate full index"
     )
 
     parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
-
-    parser.add_argument(
-        "--stats-only",
-        action="store_true",
-        help="Only show statistics, don't generate full index"
-    )
-
-    parser.add_argument(
-        "--dep-graph",
-        action="store_true",
-        help="Generate dependency graph (Mermaid format)"
+        "--dep-graph", action="store_true", help="Generate dependency graph (Mermaid format)"
     )
 
     parser.add_argument(
         "--entity-map",
         action="store_true",
-        help="Show entity map (all classes/functions by module)"
+        help="Show entity map (all classes/functions by module)",
     )
 
     args = parser.parse_args()
@@ -172,7 +153,7 @@ Examples:
                     output_file.parent.mkdir(parents=True, exist_ok=True)
 
                     try:
-                        with open(output_file, 'w') as f:
+                        with open(output_file, "w") as f:
                             f.write(module_info.pyshorthand)
                         success_count += 1
 
@@ -205,9 +186,18 @@ Examples:
             print(entity_map)
 
         # If no output options specified, print summary
-        if not args.output and not args.report and not args.generate_pys and not args.verbose and not args.dep_graph and not args.entity_map:
+        if (
+            not args.output
+            and not args.report
+            and not args.generate_pys
+            and not args.verbose
+            and not args.dep_graph
+            and not args.entity_map
+        ):
             print(f"Indexed {index.statistics['total_files']} Python files")
-            print(f"Found {index.statistics['total_entities']} entities ({index.statistics['total_classes']} classes, {index.statistics['total_functions']} functions)")
+            print(
+                f"Found {index.statistics['total_entities']} entities ({index.statistics['total_classes']} classes, {index.statistics['total_functions']} functions)"
+            )
             print(f"Total lines: {index.statistics['total_lines']:,}")
             print()
             print("Use --report for detailed report")
@@ -218,6 +208,7 @@ Examples:
         print(f"Error: {e}", file=sys.stderr)
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

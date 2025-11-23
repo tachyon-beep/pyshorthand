@@ -4,10 +4,9 @@ According to RFC Section 3.7, PyShorthand supports both Unicode
 and ASCII-compatible notation for portability.
 """
 
-from typing import Dict, Set
 
 # Unicode → ASCII mapping (canonical form → ASCII)
-UNICODE_TO_ASCII: Dict[str, str] = {
+UNICODE_TO_ASCII: dict[str, str] = {
     "→": "->",
     "⊳": ">>",
     "∈": "IN",
@@ -24,10 +23,10 @@ UNICODE_TO_ASCII: Dict[str, str] = {
 }
 
 # ASCII → Unicode mapping (reverse of above)
-ASCII_TO_UNICODE: Dict[str, str] = {v: k for k, v in UNICODE_TO_ASCII.items()}
+ASCII_TO_UNICODE: dict[str, str] = {v: k for k, v in UNICODE_TO_ASCII.items()}
 
 # Operators (all forms)
-OPERATORS: Set[str] = {
+OPERATORS: set[str] = {
     # Flow operators
     "→",
     "->",
@@ -92,19 +91,19 @@ OPERATORS: Set[str] = {
 }
 
 # Flow operators (control flow)
-FLOW_OPERATORS: Set[str] = {"→", "->", "⊳", ">>", "←", "<-"}
+FLOW_OPERATORS: set[str] = {"→", "->", "⊳", ">>", "←", "<-"}
 
 # Mutation operators
-MUTATION_OPERATORS: Set[str] = {"!", "!!", "!?", "?!"}
+MUTATION_OPERATORS: set[str] = {"!", "!!", "!?", "?!"}
 
 # Assignment operators
-ASSIGNMENT_OPERATORS: Set[str] = {"≡", "==", "="}
+ASSIGNMENT_OPERATORS: set[str] = {"≡", "==", "="}
 
 # Math operators
-MATH_OPERATORS: Set[str] = {"Σ", "SUM", "Π", "PROD", "⊗", "MAT", "∇", "GRAD"}
+MATH_OPERATORS: set[str] = {"Σ", "SUM", "Π", "PROD", "⊗", "MAT", "∇", "GRAD"}
 
 # Valid tag base types (from RFC Section 3.5)
-VALID_TAG_BASES: Set[str] = {
+VALID_TAG_BASES: set[str] = {
     "Lin",  # Linear/algebraic
     "Thresh",  # Branching/bounds
     "Iter",  # Iteration
@@ -117,7 +116,7 @@ VALID_TAG_BASES: Set[str] = {
 }
 
 # Common qualifiers (v1.4 - expanded)
-COMMON_QUALIFIERS: Set[str] = {
+COMMON_QUALIFIERS: set[str] = {
     # Complexity (extended in v1.4)
     "O(1)",
     "O(log N)",
@@ -182,25 +181,25 @@ COMMON_QUALIFIERS: Set[str] = {
 }
 
 # Decorator tags (v1.4 new, v1.5 expanded)
-DECORATOR_TAGS: Set[str] = {
+DECORATOR_TAGS: set[str] = {
     # Standard Python decorators
-    "Prop",       # @property
-    "Setter",     # @name.setter
-    "Deleter",    # @name.deleter
-    "Cached",     # @cached_property or @lru_cache
-    "Static",     # @staticmethod
-    "Class",      # @classmethod
-    "Abstract",   # @abstractmethod (v1.5: also marks abstract classes/methods)
-    "Protocol",   # v1.5: marks Protocol classes
+    "Prop",  # @property
+    "Setter",  # @name.setter
+    "Deleter",  # @name.deleter
+    "Cached",  # @cached_property or @lru_cache
+    "Static",  # @staticmethod
+    "Class",  # @classmethod
+    "Abstract",  # @abstractmethod (v1.5: also marks abstract classes/methods)
+    "Protocol",  # v1.5: marks Protocol classes
     # Common framework decorators
-    "Auth",       # Authentication required
-    "Retry",      # Retry decorator
-    "Timeout",    # Timeout decorator
+    "Auth",  # Authentication required
+    "Retry",  # Retry decorator
+    "Timeout",  # Timeout decorator
     "RateLimit",  # Rate limiting
 }
 
 # HTTP method tags (v1.4 new)
-HTTP_METHODS: Set[str] = {
+HTTP_METHODS: set[str] = {
     "GET",
     "POST",
     "PUT",
@@ -211,15 +210,10 @@ HTTP_METHODS: Set[str] = {
 }
 
 # All valid tag components (combined)
-ALL_TAG_COMPONENTS: Set[str] = (
-    VALID_TAG_BASES |
-    COMMON_QUALIFIERS |
-    DECORATOR_TAGS |
-    HTTP_METHODS
-)
+ALL_TAG_COMPONENTS: set[str] = VALID_TAG_BASES | COMMON_QUALIFIERS | DECORATOR_TAGS | HTTP_METHODS
 
 # Valid type names (from RFC Section 3.3)
-VALID_TYPES: Set[str] = {
+VALID_TYPES: set[str] = {
     "f32",
     "f64",
     "i8",
@@ -241,7 +235,7 @@ VALID_TYPES: Set[str] = {
 }
 
 # Valid locations (from RFC Section 3.3)
-VALID_LOCATIONS: Set[str] = {
+VALID_LOCATIONS: set[str] = {
     "CPU",
     "GPU",
     "Disk",
@@ -254,7 +248,7 @@ VALID_LOCATIONS: Set[str] = {
 }
 
 # Metadata keys (from RFC Section 3.1)
-METADATA_KEYS: Set[str] = {
+METADATA_KEYS: set[str] = {
     "M",  # Module name
     "ID",  # Unique identifier
     "Role",  # Core|Glue|Script
@@ -267,23 +261,23 @@ METADATA_KEYS: Set[str] = {
 }
 
 # Valid roles
-VALID_ROLES: Set[str] = {"Core", "Glue", "Script"}
+VALID_ROLES: set[str] = {"Core", "Glue", "Script"}
 
 # Valid layers
-VALID_LAYERS: Set[str] = {"Domain", "Infra", "Adapter", "Test"}
+VALID_LAYERS: set[str] = {"Domain", "Infra", "Adapter", "Test"}
 
 # Valid risk levels
-VALID_RISK_LEVELS: Set[str] = {"High", "Med", "Low"}
+VALID_RISK_LEVELS: set[str] = {"High", "Med", "Low"}
 
 # Entity prefixes (v1.5: added P and E)
-ENTITY_PREFIXES: Dict[str, str] = {
+ENTITY_PREFIXES: dict[str, str] = {
     "C": "class",
     "D": "data",
     "I": "interface",
     "M": "module",
     "F": "function",
     "P": "protocol",  # v1.5: Protocol (typing.Protocol)
-    "E": "enum",     # v1.5: Enum
+    "E": "enum",  # v1.5: Enum
     "Ref": "reference",
 }
 
@@ -441,7 +435,8 @@ def is_complexity_tag(tag: str) -> bool:
         False
     """
     import re
-    return bool(re.match(r'^O\(.+\)$', tag))
+
+    return bool(re.match(r"^O\(.+\)$", tag))
 
 
 def parse_http_route(tag_string: str) -> tuple[str, str] | None:
@@ -464,7 +459,7 @@ def parse_http_route(tag_string: str) -> tuple[str, str] | None:
     parts = tag_string.split(None, 1)
     if len(parts) == 2:
         method, path = parts
-        if method in HTTP_METHODS and path.startswith('/'):
+        if method in HTTP_METHODS and path.startswith("/"):
             return (method, path)
     return None
 
@@ -502,7 +497,8 @@ def is_valid_tag_component(component: str) -> bool:
 
     # Allow custom decorator names (alphanumeric + colon for args)
     import re
-    if re.match(r'^[A-Z][a-zA-Z0-9_]*(:[a-zA-Z0-9_,]+)?$', component):
+
+    if re.match(r"^[A-Z][a-zA-Z0-9_]*(:[a-zA-Z0-9_,]+)?$", component):
         return True
 
     return False

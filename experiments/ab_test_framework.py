@@ -14,19 +14,20 @@ Measures:
 - Completeness
 """
 
-import os
 import json
+import os
 import time
-import requests
-from pathlib import Path
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any
+
+import requests
 
 
 @dataclass
 class Question:
     """A single test question"""
+
     id: int
     difficulty: str  # easy, medium, medium-hard, hard
     category: str  # structure, signature, architecture, implementation
@@ -38,6 +39,7 @@ class Question:
 @dataclass
 class TestResult:
     """Result from testing with one code format"""
+
     question_id: int
     format: str  # "original" or "pyshorthand"
     answer: str
@@ -58,7 +60,7 @@ class OpenRouterClient:
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
         self.model = "anthropic/claude-3.5-sonnet"  # Using Sonnet for quality
 
-    def ask_question(self, system_prompt: str, question: str, code_context: str) -> Dict[str, Any]:
+    def ask_question(self, system_prompt: str, question: str, code_context: str) -> dict[str, Any]:
         """
         Ask a question given code context
 
@@ -87,7 +89,7 @@ Provide a clear, concise answer. If you cannot determine the answer from the pro
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_prompt}
+                {"role": "user", "content": full_prompt},
             ],
         }
 
@@ -121,11 +123,7 @@ class ExperimentRunner:
         print(f"  Testing Q{question.id} with {format_name} format...")
 
         try:
-            result = self.client.ask_question(
-                self.system_prompt,
-                question.question,
-                code_context
-            )
+            result = self.client.ask_question(self.system_prompt, question.question, code_context)
 
             # Simple correctness check (exact match or contains)
             is_correct = self._check_correctness(result["answer"], question.correct_answer)
@@ -141,7 +139,7 @@ class ExperimentRunner:
                 total_tokens=result["total_tokens"],
                 is_correct=is_correct,
                 completeness_score=completeness,
-                notes=""
+                notes="",
             )
 
         except Exception as e:
@@ -155,7 +153,7 @@ class ExperimentRunner:
                 total_tokens=0,
                 is_correct=False,
                 completeness_score=0.0,
-                notes=f"Error: {str(e)}"
+                notes=f"Error: {str(e)}",
             )
 
     def _check_correctness(self, answer: str, correct: str) -> bool:
@@ -192,108 +190,182 @@ class ExperimentRunner:
         return min(1.0, overlap * 1.5)  # Boost slightly
 
 
-def load_test_suite() -> List[Question]:
+def load_test_suite() -> list[Question]:
     """Load the test questions"""
     # These are the good questions from the synthetic exam
     questions = [
         # EASY QUESTIONS (1-5)
-        Question(1, "easy", "structure",
-                "How many classes are defined in the codebase?",
-                "6", "Tests basic code navigation"),
-
-        Question(2, "easy", "structure",
-                "Which class is decorated with @dataclass?",
-                "GPTConfig", "Tests decorator identification"),
-
-        Question(3, "easy", "architecture",
-                "What is the default value for block_size in the configuration?",
-                "1024", "Tests reading configuration defaults"),
-
-        Question(4, "easy", "structure",
-                "Which PyTorch module does the LayerNorm class inherit from?",
-                "nn.Module", "Tests understanding class hierarchy"),
-
-        Question(5, "easy", "structure",
-                "How many methods does the GPT class have (excluding __init__)?",
-                "7", "Tests method counting"),
-
+        Question(
+            1,
+            "easy",
+            "structure",
+            "How many classes are defined in the codebase?",
+            "6",
+            "Tests basic code navigation",
+        ),
+        Question(
+            2,
+            "easy",
+            "structure",
+            "Which class is decorated with @dataclass?",
+            "GPTConfig",
+            "Tests decorator identification",
+        ),
+        Question(
+            3,
+            "easy",
+            "architecture",
+            "What is the default value for block_size in the configuration?",
+            "1024",
+            "Tests reading configuration defaults",
+        ),
+        Question(
+            4,
+            "easy",
+            "structure",
+            "Which PyTorch module does the LayerNorm class inherit from?",
+            "nn.Module",
+            "Tests understanding class hierarchy",
+        ),
+        Question(
+            5,
+            "easy",
+            "structure",
+            "How many methods does the GPT class have (excluding __init__)?",
+            "7",
+            "Tests method counting",
+        ),
         # MEDIUM QUESTIONS (6-10)
-        Question(6, "medium", "signature",
-                "What parameters does the generate() method accept (excluding self)?",
-                "idx, max_new_tokens, temperature, top_k", "Tests reading method signatures"),
-
-        Question(7, "medium", "signature",
-                "Which state variables in the MLP class are of type nn.Linear?",
-                "c_fc, c_proj", "Tests identifying typed state variables"),
-
-        Question(8, "medium", "signature",
-                "What does the forward() method in the GPT class return?",
-                "tuple of (logits, loss)", "Tests understanding return types"),
-
-        Question(9, "medium", "signature",
-                "Which method is decorated with @classmethod? Provide the method name.",
-                "from_pretrained", "Tests identifying method decorators"),
-
-        Question(10, "medium", "structure",
-                "What are the state variables of the Block class?",
-                "ln_1, attn, ln_2, mlp", "Tests reading class structure"),
-
+        Question(
+            6,
+            "medium",
+            "signature",
+            "What parameters does the generate() method accept (excluding self)?",
+            "idx, max_new_tokens, temperature, top_k",
+            "Tests reading method signatures",
+        ),
+        Question(
+            7,
+            "medium",
+            "signature",
+            "Which state variables in the MLP class are of type nn.Linear?",
+            "c_fc, c_proj",
+            "Tests identifying typed state variables",
+        ),
+        Question(
+            8,
+            "medium",
+            "signature",
+            "What does the forward() method in the GPT class return?",
+            "tuple of (logits, loss)",
+            "Tests understanding return types",
+        ),
+        Question(
+            9,
+            "medium",
+            "signature",
+            "Which method is decorated with @classmethod? Provide the method name.",
+            "from_pretrained",
+            "Tests identifying method decorators",
+        ),
+        Question(
+            10,
+            "medium",
+            "structure",
+            "What are the state variables of the Block class?",
+            "ln_1, attn, ln_2, mlp",
+            "Tests reading class structure",
+        ),
         # MEDIUM-HARD QUESTIONS (11-15)
-        Question(11, "medium-hard", "architecture",
-                "What classes does the Block class depend on (use as state variables)?",
-                "LayerNorm, CausalSelfAttention, MLP", "Tests understanding dependencies"),
-
-        Question(12, "medium-hard", "signature",
-                "The CausalSelfAttention class contains c_attn and c_proj. What types are they?",
-                "nn.Linear", "Tests understanding component types"),
-
-        Question(13, "medium-hard", "architecture",
-                "List all configuration parameters in GPTConfig with their default values.",
-                "block_size=1024, vocab_size=50304, n_layer=12, n_head=12, n_embd=768, dropout=0.0, bias=True",
-                "Tests complete configuration understanding"),
-
-        Question(14, "medium-hard", "implementation",
-                "Which method in GPT class handles weight initialization, and what special treatment is given?",
-                "_init_weights method, special scaled init to residual projections (c_proj.weight)",
-                "Tests understanding initialization patterns"),
-
-        Question(15, "medium-hard", "architecture",
-                "What type is the transformer state variable in GPT class, and what sub-components does it contain?",
-                "nn.ModuleDict containing wte, wpe, drop, h, ln_f",
-                "Tests understanding nested architecture"),
-
+        Question(
+            11,
+            "medium-hard",
+            "architecture",
+            "What classes does the Block class depend on (use as state variables)?",
+            "LayerNorm, CausalSelfAttention, MLP",
+            "Tests understanding dependencies",
+        ),
+        Question(
+            12,
+            "medium-hard",
+            "signature",
+            "The CausalSelfAttention class contains c_attn and c_proj. What types are they?",
+            "nn.Linear",
+            "Tests understanding component types",
+        ),
+        Question(
+            13,
+            "medium-hard",
+            "architecture",
+            "List all configuration parameters in GPTConfig with their default values.",
+            "block_size=1024, vocab_size=50304, n_layer=12, n_head=12, n_embd=768, dropout=0.0, bias=True",
+            "Tests complete configuration understanding",
+        ),
+        Question(
+            14,
+            "medium-hard",
+            "implementation",
+            "Which method in GPT class handles weight initialization, and what special treatment is given?",
+            "_init_weights method, special scaled init to residual projections (c_proj.weight)",
+            "Tests understanding initialization patterns",
+        ),
+        Question(
+            15,
+            "medium-hard",
+            "architecture",
+            "What type is the transformer state variable in GPT class, and what sub-components does it contain?",
+            "nn.ModuleDict containing wte, wpe, drop, h, ln_f",
+            "Tests understanding nested architecture",
+        ),
         # HARD QUESTIONS (16-20)
-        Question(16, "hard", "implementation",
-                "What is the computational complexity of the generate() method?",
-                "O(N)", "Tests complexity analysis"),
-
-        Question(17, "hard", "implementation",
-                "What does the assertion in from_pretrained() check?",
-                "model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'} and only dropout can be overridden",
-                "Tests understanding validation logic"),
-
-        Question(18, "hard", "implementation",
-                "What optimization is used in the forward() method during inference?",
-                "only forward lm_head on the very last position using x[:, [-1], :]",
-                "Tests understanding performance optimizations"),
-
-        Question(19, "hard", "implementation",
-                "What happens if flash attention is NOT available in CausalSelfAttention?",
-                "registers a causal mask buffer (torch.tril), uses manual attention implementation",
-                "Tests understanding conditional paths"),
-
-        Question(20, "hard", "implementation",
-                "In configure_optimizers(), how are parameters divided into groups and why?",
-                "p.dim() >= 2 get weight decay (weight tensors), p.dim() < 2 no decay (biases/norms)",
-                "Tests understanding optimization strategy"),
+        Question(
+            16,
+            "hard",
+            "implementation",
+            "What is the computational complexity of the generate() method?",
+            "O(N)",
+            "Tests complexity analysis",
+        ),
+        Question(
+            17,
+            "hard",
+            "implementation",
+            "What does the assertion in from_pretrained() check?",
+            "model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'} and only dropout can be overridden",
+            "Tests understanding validation logic",
+        ),
+        Question(
+            18,
+            "hard",
+            "implementation",
+            "What optimization is used in the forward() method during inference?",
+            "only forward lm_head on the very last position using x[:, [-1], :]",
+            "Tests understanding performance optimizations",
+        ),
+        Question(
+            19,
+            "hard",
+            "implementation",
+            "What happens if flash attention is NOT available in CausalSelfAttention?",
+            "registers a causal mask buffer (torch.tril), uses manual attention implementation",
+            "Tests understanding conditional paths",
+        ),
+        Question(
+            20,
+            "hard",
+            "implementation",
+            "In configure_optimizers(), how are parameters divided into groups and why?",
+            "p.dim() >= 2 get weight decay (weight tensors), p.dim() < 2 no decay (biases/norms)",
+            "Tests understanding optimization strategy",
+        ),
     ]
 
     return questions
 
 
-def save_results(results: List[TestResult], output_file: str):
+def save_results(results: list[TestResult], output_file: str):
     """Save results to JSON file"""
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump([asdict(r) for r in results], f, indent=2)
     print(f"\n✅ Results saved to {output_file}")
 
@@ -329,9 +401,9 @@ def run_experiment(original_code_path: str, pyshorthand_code_path: str, output_d
     runner = ExperimentRunner(api_key)
     all_results = []
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("RUNNING EXPERIMENTS")
-    print("="*80)
+    print("=" * 80)
 
     for question in questions:
         print(f"\n📝 Question {question.id} ({question.difficulty} - {question.category})")
@@ -340,9 +412,11 @@ def run_experiment(original_code_path: str, pyshorthand_code_path: str, output_d
         # Test with original code
         result_original = runner.run_test(question, original_code, "original")
         all_results.append(result_original)
-        print(f"   ✓ Original: {result_original.response_time_ms}ms, "
-              f"{result_original.total_tokens} tokens, "
-              f"{'✅ Correct' if result_original.is_correct else '❌ Incorrect'}")
+        print(
+            f"   ✓ Original: {result_original.response_time_ms}ms, "
+            f"{result_original.total_tokens} tokens, "
+            f"{'✅ Correct' if result_original.is_correct else '❌ Incorrect'}"
+        )
 
         # Small delay to avoid rate limiting
         time.sleep(1)
@@ -350,9 +424,11 @@ def run_experiment(original_code_path: str, pyshorthand_code_path: str, output_d
         # Test with PyShorthand code
         result_pyshort = runner.run_test(question, pyshorthand_code, "pyshorthand")
         all_results.append(result_pyshort)
-        print(f"   ✓ PyShort:  {result_pyshort.response_time_ms}ms, "
-              f"{result_pyshort.total_tokens} tokens, "
-              f"{'✅ Correct' if result_pyshort.is_correct else '❌ Incorrect'}")
+        print(
+            f"   ✓ PyShort:  {result_pyshort.response_time_ms}ms, "
+            f"{result_pyshort.total_tokens} tokens, "
+            f"{'✅ Correct' if result_pyshort.is_correct else '❌ Incorrect'}"
+        )
 
         # Small delay
         time.sleep(1)
@@ -370,14 +446,14 @@ if __name__ == "__main__":
     pyshorthand_path = "realworld_nanogpt.pys"
     output_dir = "experiments/results"
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("PYSHORTHAND A/B TESTING FRAMEWORK")
-    print("="*80)
+    print("=" * 80)
 
     results, results_file = run_experiment(original_path, pyshorthand_path, output_dir)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXPERIMENT COMPLETE")
-    print("="*80)
+    print("=" * 80)
     print(f"\nResults saved to: {results_file}")
     print("\nRun analyze_results.py to generate analysis report.")

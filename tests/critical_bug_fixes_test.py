@@ -5,16 +5,16 @@ Test suite for critical bug fixes identified in code review.
 Tests all 16 critical-severity issues that were fixed.
 """
 
-import pytest
 import sys
-import os
 from pathlib import Path
+
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from pyshort.core.tokenizer import Tokenizer
 from pyshort.core.parser import Parser
+from pyshort.core.tokenizer import Tokenizer
 from pyshort.decompiler.py2short import PyShortDecompiler
 from pyshort.indexer.repo_indexer import RepositoryIndexer
 
@@ -100,8 +100,9 @@ class TestTokenizerFixes:
 
         # The first number should be "1.2", not "1.2.3.4"
         if number_tokens:
-            assert number_tokens[0].value != "1.2.3.4", \
-                "Tokenizer incorrectly accepted multiple decimal points"
+            assert (
+                number_tokens[0].value != "1.2.3.4"
+            ), "Tokenizer incorrectly accepted multiple decimal points"
 
     def test_t1_valid_decimal_number(self):
         """T1: Should accept valid decimal numbers."""
@@ -123,10 +124,12 @@ class TestTokenizerFixes:
         assert len(string_tokens) == 1
 
         # Should contain actual newline character, not literal 'n'
-        assert "\n" in string_tokens[0].value, \
-            f"Expected newline character, got: {repr(string_tokens[0].value)}"
-        assert "\\n" not in string_tokens[0].value, \
-            f"Should not contain literal backslash-n: {repr(string_tokens[0].value)}"
+        assert (
+            "\n" in string_tokens[0].value
+        ), f"Expected newline character, got: {repr(string_tokens[0].value)}"
+        assert (
+            "\\n" not in string_tokens[0].value
+        ), f"Should not contain literal backslash-n: {repr(string_tokens[0].value)}"
 
     def test_t2_escape_sequence_tab(self):
         """T2: Tab escape sequence should work."""
@@ -153,12 +156,14 @@ class Example:
         result = decompiler.decompile(source)
 
         # Check that bool types are preserved
-        assert "∈ bool" in result or ": bool" in result, \
-            f"Boolean not correctly inferred as 'bool':\n{result}"
+        assert (
+            "∈ bool" in result or ": bool" in result
+        ), f"Boolean not correctly inferred as 'bool':\n{result}"
 
         # Make sure it's not incorrectly typed as i32
-        assert "enabled ∈ i32" not in result and "enabled: i32" not in result, \
-            f"Boolean incorrectly inferred as 'i32':\n{result}"
+        assert (
+            "enabled ∈ i32" not in result and "enabled: i32" not in result
+        ), f"Boolean incorrectly inferred as 'i32':\n{result}"
 
     def test_d1_integer_type_inference(self):
         """D1: Integers should still be typed as 'i32'."""
@@ -193,10 +198,8 @@ class MyClass:
         # Check that only module-level imports are captured
         assert "os" in decompiler.imports
         assert "sys" in decompiler.imports
-        assert "json" not in decompiler.imports, \
-            "Nested import incorrectly captured from function"
-        assert "re" not in decompiler.imports, \
-            "Nested import incorrectly captured from method"
+        assert "json" not in decompiler.imports, "Nested import incorrectly captured from function"
+        assert "re" not in decompiler.imports, "Nested import incorrectly captured from method"
 
 
 class TestIndexerFixes:
@@ -220,8 +223,7 @@ class MyClass:
 
         # Should find both top-level functions
         functions = [e for e in entities if e.type == "function"]
-        assert len(functions) == 2, \
-            f"Expected 2 top-level functions, found {len(functions)}"
+        assert len(functions) == 2, f"Expected 2 top-level functions, found {len(functions)}"
 
         function_names = {f.name for f in functions}
         assert "top_level_function" in function_names
@@ -243,8 +245,7 @@ def helper():
         imports = indexer.extract_imports(source)
 
         assert "os" in imports
-        assert "json" not in imports, \
-            "Nested import incorrectly captured by indexer"
+        assert "json" not in imports, "Nested import incorrectly captured by indexer"
 
     def test_i2b_nested_classes_not_captured_as_top_level(self):
         """I2b: Nested classes should not be captured as top-level entities."""
@@ -268,8 +269,7 @@ def top_function():
         function_names = {e.name for e in entities if e.type == "function"}
 
         assert "Outer" in class_names
-        assert "Inner" not in class_names, \
-            "Nested class incorrectly captured as top-level"
+        assert "Inner" not in class_names, "Nested class incorrectly captured as top-level"
         assert "top_function" in function_names
 
         # Inner should be a method of Outer, not a top-level entity
@@ -311,8 +311,7 @@ class Derived(Base):
         for module_info in data["modules"].values():
             for entity in module_info.get("entities", []):
                 deps = entity.get("dependencies", [])
-                assert isinstance(deps, list), \
-                    f"Dependencies should be a list, got {type(deps)}"
+                assert isinstance(deps, list), f"Dependencies should be a list, got {type(deps)}"
 
 
 def test_all_critical_fixes_summary():
@@ -329,14 +328,14 @@ def test_all_critical_fixes_summary():
         "I3: Set serialization": "Fixed - Convert to list before JSON",
     }
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("CRITICAL FIXES VERIFICATION")
-    print("="*80)
+    print("=" * 80)
     for fix, status in fixes.items():
         print(f"✓ {fix}: {status}")
-    print("="*80)
+    print("=" * 80)
     print(f"Total critical fixes: {len(fixes)}")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
 
 if __name__ == "__main__":

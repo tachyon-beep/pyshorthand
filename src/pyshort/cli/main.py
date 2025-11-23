@@ -36,10 +36,20 @@ def main() -> int:
     viz_parser = subparsers.add_parser("viz", help="Generate visualizations")
     viz_parser.add_argument("input", help="Input .pys file")
     viz_parser.add_argument("-o", "--output", help="Output file")
-    viz_parser.add_argument("-t", "--type", choices=["flowchart", "classDiagram", "graph"],
-                           default="flowchart", help="Diagram type")
-    viz_parser.add_argument("-d", "--direction", choices=["TB", "LR", "RL", "BT"],
-                           default="TB", help="Diagram direction")
+    viz_parser.add_argument(
+        "-t",
+        "--type",
+        choices=["flowchart", "classDiagram", "graph"],
+        default="flowchart",
+        help="Diagram type",
+    )
+    viz_parser.add_argument(
+        "-d",
+        "--direction",
+        choices=["TB", "LR", "RL", "BT"],
+        default="TB",
+        help="Diagram direction",
+    )
 
     # Version command
     version_parser = subparsers.add_parser("version", help="Show version information")

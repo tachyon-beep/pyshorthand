@@ -15,14 +15,14 @@ Tests whether GPT-5.1 can intelligently choose between:
 import json
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from openai import OpenAI
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
@@ -180,15 +180,14 @@ IMPORTANT:
 
 def parse_tool_calls(response_text: str) -> list:
     """Parse tool calls from GPT-5.1 response."""
-    import re
 
     tool_calls = []
-    lines = response_text.split('\n')
+    lines = response_text.split("\n")
 
     for line in lines:
-        if 'TOOL_CALL:' in line:
+        if "TOOL_CALL:" in line:
             # Extract tool call after TOOL_CALL:
-            call_str = line.split('TOOL_CALL:')[1].strip()
+            call_str = line.split("TOOL_CALL:")[1].strip()
             tool_calls.append(call_str)
 
     return tool_calls
@@ -199,7 +198,7 @@ def execute_tool(tool_call: str, explorer: CodebaseExplorer) -> dict:
     import re
 
     # Parse tool name and arguments
-    match = re.match(r'(\w+)\((.*?)\)', tool_call)
+    match = re.match(r"(\w+)\((.*?)\)", tool_call)
     if not match:
         return {"error": f"Invalid tool call format: {tool_call}"}
 
@@ -213,6 +212,7 @@ def execute_tool(tool_call: str, explorer: CodebaseExplorer) -> dict:
     if args_str.strip():
         # Split by commas, but respect nested structures
         import ast
+
         try:
             # Try to parse as Python literal
             args_str_wrapped = f"[{args_str}]"
@@ -220,10 +220,10 @@ def execute_tool(tool_call: str, explorer: CodebaseExplorer) -> dict:
             args = parsed
         except:
             # Simple string parsing
-            parts = [p.strip() for p in args_str.split(',')]
+            parts = [p.strip() for p in args_str.split(",")]
             for part in parts:
-                if '=' in part:
-                    k, v = part.split('=', 1)
+                if "=" in part:
+                    k, v = part.split("=", 1)
                     try:
                         kwargs[k.strip()] = ast.literal_eval(v.strip())
                     except:
@@ -236,43 +236,45 @@ def execute_tool(tool_call: str, explorer: CodebaseExplorer) -> dict:
 
     # Execute tool
     try:
-        if tool_name == 'get_module_pyshorthand':
+        if tool_name == "get_module_pyshorthand":
             result = explorer.get_module_pyshorthand()
             return {"result": result, "tokens": len(result.split()) * 1.3 if result else 0}
 
-        elif tool_name == 'get_class_pyshorthand':
+        elif tool_name == "get_class_pyshorthand":
             result = explorer.get_class_pyshorthand(args[0] if args else "")
             return {"result": result, "tokens": len(result.split()) * 1.3 if result else 0}
 
-        elif tool_name == 'get_class_details':
-            expand = kwargs.get('expand_nested', True)
+        elif tool_name == "get_class_details":
+            expand = kwargs.get("expand_nested", True)
             result = explorer.get_class_details(args[0] if args else "", expand_nested=expand)
             return {"result": result, "tokens": len(result.split()) * 1.3 if result else 0}
 
-        elif tool_name == 'get_implementation':
+        elif tool_name == "get_implementation":
             result = explorer.get_implementation(args[0] if args else "")
             return {"result": result, "tokens": len(result.split()) * 1.3 if result else 0}
 
-        elif tool_name == 'get_context_pack':
-            max_depth = kwargs.get('max_depth', 2) if kwargs else (args[1] if len(args) > 1 else 2)
+        elif tool_name == "get_context_pack":
+            max_depth = kwargs.get("max_depth", 2) if kwargs else (args[1] if len(args) > 1 else 2)
             result = explorer.get_context_pack(args[0] if args else "", max_depth=max_depth)
             result_str = json.dumps(result, indent=2) if result else "None"
             return {"result": result_str, "tokens": len(result_str.split()) * 1.3}
 
-        elif tool_name == 'trace_execution':
-            max_depth = kwargs.get('max_depth', 10) if kwargs else (args[1] if len(args) > 1 else 10)
+        elif tool_name == "trace_execution":
+            max_depth = (
+                kwargs.get("max_depth", 10) if kwargs else (args[1] if len(args) > 1 else 10)
+            )
             result = explorer.trace_execution(args[0] if args else "", max_depth=max_depth)
             result_str = json.dumps(result, indent=2) if result else "None"
             return {"result": result_str, "tokens": len(result_str.split()) * 1.3}
 
-        elif tool_name == 'get_neighbors':
+        elif tool_name == "get_neighbors":
             result = explorer.get_neighbors(args[0] if args else "")
             result_str = json.dumps(result, indent=2) if result else "None"
             return {"result": result_str, "tokens": len(result_str.split()) * 1.3}
 
-        elif tool_name == 'search_usage':
+        elif tool_name == "search_usage":
             result = explorer.search_usage(args[0] if args else "")
-            result_str = '\n'.join(result) if result else "No usages found"
+            result_str = "\n".join(result) if result else "No usages found"
             return {"result": result_str, "tokens": len(result_str.split()) * 1.3}
 
         else:
@@ -294,7 +296,7 @@ def test_question(client, question_data: dict, explorer: CodebaseExplorer) -> di
 
     messages = [
         {"role": "system", "content": create_system_prompt()},
-        {"role": "user", "content": question}
+        {"role": "user", "content": question},
     ]
 
     total_tokens = 0
@@ -317,7 +319,7 @@ def test_question(client, question_data: dict, explorer: CodebaseExplorer) -> di
         print(f"\nGPT-5.1 Response:\n{assistant_message}\n")
 
         # Track tokens
-        if hasattr(response, 'usage'):
+        if hasattr(response, "usage"):
             total_tokens += response.usage.total_tokens
 
         # Check if there are tool calls
@@ -362,7 +364,7 @@ def test_question(client, question_data: dict, explorer: CodebaseExplorer) -> di
                 tool_results.append(f"Tool: {tool_call}\nError: {result['error']}")
             else:
                 tool_results.append(f"Tool: {tool_call}\nResult:\n{result['result']}")
-                total_tokens += int(result.get('tokens', 0))
+                total_tokens += int(result.get("tokens", 0))
 
         # Add assistant message and tool results to conversation
         messages.append({"role": "assistant", "content": assistant_message})
@@ -382,13 +384,13 @@ def test_question(client, question_data: dict, explorer: CodebaseExplorer) -> di
 
 def main():
     """Run full toolset test."""
-    print("="*80)
+    print("=" * 80)
     print("GPT-5.1 Full Toolset Test")
     print("Testing all 8 ecosystem tools")
-    print("="*80)
+    print("=" * 80)
 
     # Initialize OpenRouter client
-    api_key = os.getenv('OPENROUTER_API_KEY')
+    api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         print("ERROR: OPENROUTER_API_KEY not found in environment")
         return
@@ -419,6 +421,7 @@ def main():
         except Exception as e:
             print(f"\n✗ Q{question_data['id']} failed: {e}")
             import traceback
+
             traceback.print_exc()
 
     # Save results
@@ -426,7 +429,7 @@ def main():
     output_file = Path(__file__).parent / "results" / f"full_toolset_{timestamp}.json"
     output_file.parent.mkdir(exist_ok=True)
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
 
     print(f"\n{'='*80}")
@@ -439,7 +442,9 @@ def main():
     for result in results:
         print(f"Q{result['question_id']}: {result['complexity']}")
         print(f"  Expected: {', '.join(result['expected_tools'])}")
-        print(f"  Actually used: {', '.join(result['tools_used']) if result['tools_used'] else 'None'}")
+        print(
+            f"  Actually used: {', '.join(result['tools_used']) if result['tools_used'] else 'None'}"
+        )
         print(f"  Tokens: {result['total_tokens']}")
         print()
 

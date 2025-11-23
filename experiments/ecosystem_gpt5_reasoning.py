@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +21,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ab_test_framework import Question, load_test_suite
+
 from pyshort.ecosystem.tools import CodebaseExplorer
 
 
@@ -142,7 +143,7 @@ Think carefully about what information you need to answer this question."""
 
             # Extract response
             content = response.choices[0].message.content
-            reasoning_details = getattr(response.choices[0].message, 'reasoning_details', None)
+            reasoning_details = getattr(response.choices[0].message, "reasoning_details", None)
 
             # Extract reasoning summary
             reasoning_summary = "No reasoning provided"
@@ -169,9 +170,13 @@ Think carefully about what information you need to answer this question."""
                         # Try to parse tool call
                         if "get_class_details(" in line:
                             class_name = line.split("get_class_details(")[1].split(")")[0].strip()
-                            details = self.explorer.get_class_details(class_name, expand_nested=True)
+                            details = self.explorer.get_class_details(
+                                class_name, expand_nested=True
+                            )
                             if details:
-                                tool_outputs.append(f"# get_class_details({class_name}):\n{details}")
+                                tool_outputs.append(
+                                    f"# get_class_details({class_name}):\n{details}"
+                                )
                                 tools_called.append(f"get_class_details({class_name})")
                                 tool_tokens += len(details.split())
                                 print(f"  🔍 Called: get_class_details({class_name})")
@@ -198,7 +203,7 @@ Think carefully about what information you need to answer this question."""
             # If tools were called, make second API call with results
             final_answer = content
             if tool_outputs:
-                print(f"  💭 Reasoning with tool results...")
+                print("  💭 Reasoning with tool results...")
 
                 tool_results = "\n\n".join(tool_outputs)
 
@@ -209,9 +214,12 @@ Think carefully about what information you need to answer this question."""
                     {
                         "role": "assistant",
                         "content": content,
-                        "reasoning_details": reasoning_details if reasoning_details else None
+                        "reasoning_details": reasoning_details if reasoning_details else None,
                     },
-                    {"role": "user", "content": f"Here are the tool results:\n\n{tool_results}\n\nNow provide your final answer."}
+                    {
+                        "role": "user",
+                        "content": f"Here are the tool results:\n\n{tool_results}\n\nNow provide your final answer.",
+                    },
                 ]
 
                 # Remove None reasoning_details if present
@@ -241,7 +249,9 @@ Think carefully about what information you need to answer this question."""
             total_tokens = self.pyshorthand_tokens + tool_tokens
 
             status = "✅" if is_correct else "❌"
-            print(f"  {status} Tokens: {self.pyshorthand_tokens} (base) + {tool_tokens} (tools) = {total_tokens}")
+            print(
+                f"  {status} Tokens: {self.pyshorthand_tokens} (base) + {tool_tokens} (tools) = {total_tokens}"
+            )
             print(f"  {status} Answer: {answer[:100]}...")
 
             return ReasoningResult(
@@ -262,6 +272,7 @@ Think carefully about what information you need to answer this question."""
         except Exception as e:
             print(f"  ❌ Error: {e}")
             import traceback
+
             traceback.print_exc()
 
             return ReasoningResult(
@@ -326,7 +337,7 @@ def main():
     avg_tools = sum(r.tool_tokens for r in results) / len(results)
     avg_total = sum(r.total_tokens for r in results) / len(results)
 
-    print(f"Average tokens:")
+    print("Average tokens:")
     print(f"  Base (PyShorthand): {avg_base:.0f}")
     print(f"  Tools: {avg_tools:.0f}")
     print(f"  Total: {avg_total:.0f}")
@@ -340,6 +351,7 @@ def main():
     print(f"Tool calls: {len(all_tools)} total")
     if all_tools:
         from collections import Counter
+
         tool_counts = Counter(all_tools)
         for tool, count in tool_counts.most_common():
             print(f"  {tool}: {count}")
@@ -347,9 +359,9 @@ def main():
 
     # Comparison
     print("Comparison to baselines:")
-    print(f"  Full code: 35% accuracy, 5,348 tokens")
-    print(f"  PyShorthand v1.5: 35% accuracy, 894 tokens")
-    print(f"  Ecosystem (keyword): 40% accuracy, 328 tokens")
+    print("  Full code: 35% accuracy, 5,348 tokens")
+    print("  PyShorthand v1.5: 35% accuracy, 894 tokens")
+    print("  Ecosystem (keyword): 40% accuracy, 328 tokens")
     print(f"  Ecosystem (GPT-5.1): {accuracy:.0f}% accuracy, {avg_total:.0f} tokens")
     print()
 

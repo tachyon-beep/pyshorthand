@@ -1,10 +1,10 @@
 """Repository indexing for PyShorthand."""
 
 from pyshort.indexer.repo_indexer import (
-    RepositoryIndexer,
-    RepositoryIndex,
-    ModuleInfo,
     EntityInfo,
+    ModuleInfo,
+    RepositoryIndex,
+    RepositoryIndexer,
     index_repository,
 )
 

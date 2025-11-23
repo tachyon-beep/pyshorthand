@@ -7,7 +7,6 @@ breaking input text into a stream of tokens.
 import warnings
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Iterator, List, Optional
 
 
 class TokenType(Enum):
@@ -103,22 +102,22 @@ class Tokenizer:
         self.pos = 0
         self.line = 1
         self.column = 1
-        self.tokens: List[Token] = []
+        self.tokens: list[Token] = []
 
-    def current_char(self) -> Optional[str]:
+    def current_char(self) -> str | None:
         """Get current character without advancing."""
         if self.pos >= len(self.source):
             return None
         return self.source[self.pos]
 
-    def peek_char(self, offset: int = 1) -> Optional[str]:
+    def peek_char(self, offset: int = 1) -> str | None:
         """Peek at character at offset from current position."""
         pos = self.pos + offset
         if pos >= len(self.source):
             return None
         return self.source[pos]
 
-    def advance(self) -> Optional[str]:
+    def advance(self) -> str | None:
         """Advance position and return current character."""
         if self.pos >= len(self.source):
             return None
@@ -184,21 +183,21 @@ class Tokenizer:
             is_float: True if number has decimal point or scientific notation
         """
         try:
-            if is_float or 'e' in num_str.lower():
+            if is_float or "e" in num_str.lower():
                 # Float validation
                 value = float(num_str)
 
                 # Check for infinity (number too large for f64)
-                if value == float('inf') or value == float('-inf'):
+                if value == float("inf") or value == float("-inf"):
                     warnings.warn(
                         f"Float literal '{num_str}' at line {self.line} exceeds f64 range, will be represented as infinity",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
                 # Warn if exceeds f32 range but not f64
                 elif abs(value) > 3.4e38:
                     warnings.warn(
                         f"Float literal '{num_str}' at line {self.line} exceeds f32 range (max ±3.4e38), requires f64",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
             else:
                 # Integer validation
@@ -211,20 +210,20 @@ class Tokenizer:
                 if value > I64_MAX or value < I64_MIN:
                     warnings.warn(
                         f"Integer literal '{num_str}' at line {self.line} exceeds i64 range ({I64_MIN} to {I64_MAX})",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
                 # Warn if exceeds i32 range but fits in i64
                 elif value > 2147483647 or value < -2147483648:
                     warnings.warn(
                         f"Integer literal '{num_str}' at line {self.line} exceeds i32 range, requires i64",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
 
         except (ValueError, OverflowError):
             # Number is malformed or too large to even parse
             warnings.warn(
                 f"Numeric literal '{num_str}' at line {self.line} is malformed or extremely large",
-                SyntaxWarning
+                SyntaxWarning,
             )
 
     def read_string(self, quote: str) -> str:
@@ -261,23 +260,23 @@ class Tokenizer:
                     # Octal escape sequence (e.g., \123) - treat as literal for now
                     warnings.warn(
                         f"Octal escape sequence '\\{next_char}' at line {self.line} not supported, treating as literal",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
                     value += "\\" + next_char
                     self.advance()
-                elif next_char == 'x':
+                elif next_char == "x":
                     # Hex escape sequence (e.g., \x41) - treat as literal for now
                     warnings.warn(
                         f"Hex escape sequence '\\x' at line {self.line} not supported, treating as literal",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
                     value += "\\x"
                     self.advance()
-                elif next_char == 'u' or next_char == 'U':
+                elif next_char == "u" or next_char == "U":
                     # Unicode escape sequence - treat as literal for now
                     warnings.warn(
                         f"Unicode escape sequence '\\{next_char}' at line {self.line} not supported, treating as literal",
-                        SyntaxWarning
+                        SyntaxWarning,
                     )
                     value += "\\" + (next_char or "")
                     if next_char:
@@ -287,7 +286,7 @@ class Tokenizer:
                     if next_char:
                         warnings.warn(
                             f"Unknown escape sequence '\\{next_char}' at line {self.line}, treating as literal",
-                            SyntaxWarning
+                            SyntaxWarning,
                         )
                         value += "\\" + next_char
                         self.advance()
@@ -340,7 +339,7 @@ class Tokenizer:
 
         return value
 
-    def tokenize(self) -> List[Token]:
+    def tokenize(self) -> list[Token]:
         """Tokenize the entire source.
 
         Returns:

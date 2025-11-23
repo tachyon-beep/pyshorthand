@@ -5,17 +5,16 @@ Detects circular dependencies in type references across classes and data structu
 Part of P20: Circular reference validation.
 """
 
-from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 
-from ..core.ast_nodes import Module, Entity, Class, Data, StateVar, TypeSpec
+from ..core.ast_nodes import Class, Data, Entity, Module, TypeSpec
 
 
 @dataclass
 class CircularReferenceError:
     """Represents a detected circular reference."""
 
-    cycle: List[str]  # The cycle path, e.g., ["A", "B", "C", "A"]
+    cycle: list[str]  # The cycle path, e.g., ["A", "B", "C", "A"]
     message: str
     is_self_reference: bool = False  # True if A → A (single node cycle)
 
@@ -27,12 +26,12 @@ class CircularReferenceValidator:
     """Validates PyShorthand AST for circular type references."""
 
     def __init__(self):
-        self.dependency_graph: Dict[str, Set[str]] = {}
-        self.entity_map: Dict[str, Entity] = {}
+        self.dependency_graph: dict[str, set[str]] = {}
+        self.entity_map: dict[str, Entity] = {}
 
     def validate(
         self, module: Module, include_self_references: bool = False
-    ) -> List[CircularReferenceError]:
+    ) -> list[CircularReferenceError]:
         """
         Validate a module for circular references.
 
@@ -95,7 +94,7 @@ class CircularReferenceValidator:
                 deps = self._extract_dependencies_from_data(entity)
                 self.dependency_graph[entity.name] = deps
 
-    def _extract_dependencies_from_class(self, cls: Class) -> Set[str]:
+    def _extract_dependencies_from_class(self, cls: Class) -> set[str]:
         """Extract type dependencies from a class."""
         dependencies = set()
 
@@ -119,7 +118,7 @@ class CircularReferenceValidator:
 
         return dependencies
 
-    def _extract_dependencies_from_data(self, data: Data) -> Set[str]:
+    def _extract_dependencies_from_data(self, data: Data) -> set[str]:
         """Extract type dependencies from a data structure."""
         dependencies = set()
 
@@ -129,7 +128,7 @@ class CircularReferenceValidator:
 
         return dependencies
 
-    def _extract_type_references(self, type_spec: Optional[TypeSpec]) -> Set[str]:
+    def _extract_type_references(self, type_spec: TypeSpec | None) -> set[str]:
         """Extract entity names referenced in a type specification."""
         if not type_spec:
             return set()
@@ -150,7 +149,7 @@ class CircularReferenceValidator:
 
         return references
 
-    def _extract_ref_name(self, type_name: str) -> Optional[str]:
+    def _extract_ref_name(self, type_name: str) -> str | None:
         """
         Extract the referenced entity name from a type string.
 
@@ -197,10 +196,10 @@ class CircularReferenceValidator:
     def _detect_cycle_dfs(
         self,
         node: str,
-        visited: Set[str],
-        rec_stack: Set[str],
-        path: List[str],
-    ) -> Optional[List[str]]:
+        visited: set[str],
+        rec_stack: set[str],
+        path: list[str],
+    ) -> list[str] | None:
         """
         Detect cycles using depth-first search with recursion stack.
 
@@ -239,6 +238,6 @@ class CircularReferenceValidator:
         rec_stack.remove(node)
         return None
 
-    def get_dependency_graph(self) -> Dict[str, Set[str]]:
+    def get_dependency_graph(self) -> dict[str, set[str]]:
         """Get the built dependency graph (for debugging/inspection)."""
         return self.dependency_graph.copy()

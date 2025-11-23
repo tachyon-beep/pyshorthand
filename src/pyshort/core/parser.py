@@ -5,13 +5,11 @@ building an AST from tokenized input.
 """
 
 import re
-from typing import List, Optional, Tuple
 
 from pyshort.core.ast_nodes import (
     AttributeAccess,
     BinaryOp,
     Class,
-    Data,
     Diagnostic,
     DiagnosticSeverity,
     Expression,
@@ -19,43 +17,71 @@ from pyshort.core.ast_nodes import (
     FunctionCall,
     Identifier,
     IndexOp,
-    Interface,
     Literal,
     Metadata,
-    Module,
     Parameter,
     PyShortAST,
     Reference,
     Statement,
     StateVar,
     Tag,
-    TensorOp,
     TypeSpec,
     UnaryOp,
 )
 from pyshort.core.symbols import (
-    DECORATOR_TAGS,
     ENTITY_PREFIXES,
     HTTP_METHODS,
     is_complexity_tag,
     is_decorator_tag,
-    is_http_method,
-    normalize_operator,
     parse_http_route,
 )
-from pyshort.core.tokenizer import Token, TokenType, Tokenizer
-
+from pyshort.core.tokenizer import Token, Tokenizer, TokenType
 
 # Reserved keywords that cannot be used as identifiers
 RESERVED_KEYWORDS = {
     # Python keywords
-    'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue',
-    'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from',
-    'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not',
-    'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
     # PyShorthand reserved words
-    'C', 'F', 'D', 'I', 'M',  # Entity prefixes
-    'Ref', 'GPU', 'CPU', 'TPU',  # Common annotations
+    "C",
+    "F",
+    "D",
+    "I",
+    "M",  # Entity prefixes
+    "Ref",
+    "GPU",
+    "CPU",
+    "TPU",  # Common annotations
 }
 
 
@@ -71,7 +97,7 @@ class ParseError(Exception):
 class Parser:
     """Recursive descent parser for PyShorthand."""
 
-    def __init__(self, tokens: List[Token]) -> None:
+    def __init__(self, tokens: list[Token]) -> None:
         """Initialize parser.
 
         Args:
@@ -89,7 +115,7 @@ class Parser:
             self.current_token = self.tokens[self.pos]
         return prev
 
-    def peek(self, offset: int = 1) -> Optional[Token]:
+    def peek(self, offset: int = 1) -> Token | None:
         """Peek at token at offset from current position."""
         pos = self.pos + offset
         if pos < len(self.tokens):
@@ -127,8 +153,7 @@ class Parser:
         """
         if name in RESERVED_KEYWORDS:
             raise ParseError(
-                f"'{name}' is a reserved keyword and cannot be used as an identifier",
-                token
+                f"'{name}' is a reserved keyword and cannot be used as an identifier", token
             )
 
     def skip_newlines(self) -> None:
@@ -220,25 +245,39 @@ class Parser:
         try:
             self.advance()  # Skip [
 
-            if self.current_token.type == TokenType.EOF or self.current_token.type == TokenType.RBRACKET:
+            if (
+                self.current_token.type == TokenType.EOF
+                or self.current_token.type == TokenType.RBRACKET
+            ):
                 return False
 
-            first_token = self.current_token.value if self.current_token.type == TokenType.IDENTIFIER else ""
+            first_token = (
+                self.current_token.value if self.current_token.type == TokenType.IDENTIFIER else ""
+            )
 
             # Decorator tags
-            if first_token in ('Prop', 'Static', 'Class', 'Cached', 'Auth', 'Async', 'Pure', 'Safe'):
+            if first_token in (
+                "Prop",
+                "Static",
+                "Class",
+                "Cached",
+                "Auth",
+                "Async",
+                "Pure",
+                "Safe",
+            ):
                 return True
 
             # HTTP methods (route tags)
-            if first_token in ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'):
+            if first_token in ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"):
                 return True
 
             # Complexity tags: O(...)
-            if first_token == 'O' and self.peek() and self.peek().type == TokenType.LPAREN:
+            if first_token == "O" and self.peek() and self.peek().type == TokenType.LPAREN:
                 return True
 
             # Operation tags: NN, Lin, IO, Iter, Sync
-            if first_token in ('NN', 'Lin', 'IO', 'Iter', 'Sync'):
+            if first_token in ("NN", "Lin", "IO", "Iter", "Sync"):
                 return True
 
             # Check for qualifiers (colon after first token suggests tag, not shape)
@@ -282,7 +321,13 @@ class Parser:
                         else:
                             union_types.append(self.expect(TokenType.IDENTIFIER).value)
 
-                return TypeSpec(base_type=ref_str, shape=None, location=None, transfer=None, union_types=union_types)
+                return TypeSpec(
+                    base_type=ref_str,
+                    shape=None,
+                    location=None,
+                    transfer=None,
+                    union_types=union_types,
+                )
 
         base_type = self.expect(TokenType.IDENTIFIER).value
 
@@ -385,23 +430,21 @@ class Parser:
         self.expect(TokenType.RBRACKET)
         return "".join(ref_parts)
 
-    def parse_shape(self) -> List[str]:
+    def parse_shape(self) -> list[str]:
         """Parse shape specification [N, C, H, W]."""
         self.expect(TokenType.LBRACKET)
         dimensions = []
 
         while self.current_token.type not in (TokenType.RBRACKET, TokenType.EOF):
-            if self.current_token.type == TokenType.IDENTIFIER:
-                dimensions.append(self.current_token.value)
-                self.advance()
-            elif self.current_token.type == TokenType.NUMBER:
+            if self.current_token.type == TokenType.IDENTIFIER or self.current_token.type == TokenType.NUMBER:
                 dimensions.append(self.current_token.value)
                 self.advance()
             elif self.current_token.type == TokenType.COMMA:
                 self.advance()
             else:
-                raise ParseError(f"Unexpected token in shape: {self.current_token.value}",
-                               self.current_token)
+                raise ParseError(
+                    f"Unexpected token in shape: {self.current_token.value}", self.current_token
+                )
 
         if self.current_token.type == TokenType.EOF:
             raise ParseError("Unterminated shape specification, expected ']'", self.current_token)
@@ -424,9 +467,11 @@ class Parser:
         prev_token_type = None
         while self.current_token.type not in (TokenType.RBRACKET, TokenType.EOF):
             # Add space before slash if previous token was an HTTP method
-            if (self.current_token.type == TokenType.SLASH and
-                prev_token_type == TokenType.IDENTIFIER and
-                content in HTTP_METHODS):
+            if (
+                self.current_token.type == TokenType.SLASH
+                and prev_token_type == TokenType.IDENTIFIER
+                and content in HTTP_METHODS
+            ):
                 content += " "
 
             content += self.current_token.value
@@ -447,12 +492,7 @@ class Parser:
         route = parse_http_route(content)
         if route:
             method, path = route
-            return Tag(
-                base=content,
-                tag_type="http_route",
-                http_method=method,
-                http_path=path
-            )
+            return Tag(base=content, tag_type="http_route", http_method=method, http_path=path)
 
         # Check for complexity tag: [O(N)], [O(N*M*D)]
         if is_complexity_tag(content):
@@ -464,16 +504,12 @@ class Parser:
         # Check for decorator tag: [Prop], [Static], [Cached:TTL:60]
         if is_decorator_tag(parts[0]):
             return Tag(
-                base=parts[0],
-                qualifiers=parts[1:] if len(parts) > 1 else [],
-                tag_type="decorator"
+                base=parts[0], qualifiers=parts[1:] if len(parts) > 1 else [], tag_type="decorator"
             )
 
         # Default to operation tag: [Lin:MatMul], [Iter:Hot:O(N)]
         return Tag(
-            base=parts[0],
-            qualifiers=parts[1:] if len(parts) > 1 else [],
-            tag_type="operation"
+            base=parts[0], qualifiers=parts[1:] if len(parts) > 1 else [], tag_type="operation"
         )
 
     def parse_expression(self) -> Expression:
@@ -561,8 +597,9 @@ class Parser:
             self.expect(TokenType.RPAREN)
             return expr
 
-        raise ParseError(f"Unexpected token in expression: {self.current_token.value}",
-                        self.current_token)
+        raise ParseError(
+            f"Unexpected token in expression: {self.current_token.value}", self.current_token
+        )
 
     def _parse_indexing(self, base: Expression) -> Expression:
         """Parse array indexing: base[i, j, k]."""
@@ -611,7 +648,9 @@ class Parser:
                 break
 
         if self.current_token.type == TokenType.EOF:
-            raise ParseError(f"Unterminated function call '{name}', expected ')'", self.current_token)
+            raise ParseError(
+                f"Unterminated function call '{name}', expected ')'", self.current_token
+            )
         self.expect(TokenType.RPAREN)
         return FunctionCall(function=name, args=args)
 
@@ -658,8 +697,10 @@ class Parser:
         # Phase markers {Phase: Name}
         if self.current_token.type == TokenType.LBRACE:
             # Skip phase markers
-            while self.current_token.type != TokenType.RBRACE and \
-                  self.current_token.type != TokenType.EOF:
+            while (
+                self.current_token.type != TokenType.RBRACE
+                and self.current_token.type != TokenType.EOF
+            ):
                 self.advance()
             if self.current_token.type == TokenType.RBRACE:
                 self.advance()
@@ -683,9 +724,7 @@ class Parser:
         if self.current_token.type == TokenType.ASSERT:
             self.advance()
             condition = self.parse_expression()
-            return Statement(
-                line=line, statement_type="assertion", operator="⊢", rhs=condition
-            )
+            return Statement(line=line, statement_type="assertion", operator="⊢", rhs=condition)
 
         # Return statement
         if self.current_token.type == TokenType.RETURN:
@@ -864,8 +903,7 @@ class Parser:
 
         # Parse body
         body = []
-        while self.current_token.type not in (TokenType.EOF,) and \
-              not self.is_next_entity():
+        while self.current_token.type not in (TokenType.EOF,) and not self.is_next_entity():
             if self.current_token.type == TokenType.NEWLINE:
                 self.advance()
                 continue
@@ -932,7 +970,11 @@ class Parser:
                 if self.current_token.type == TokenType.LBRACKET:
                     # Peek ahead to check if this is an entity definition
                     next_tok = self.peek(1)
-                    if next_tok and next_tok.type == TokenType.IDENTIFIER and next_tok.value in ENTITY_PREFIXES:
+                    if (
+                        next_tok
+                        and next_tok.type == TokenType.IDENTIFIER
+                        and next_tok.value in ENTITY_PREFIXES
+                    ):
                         # This is an entity definition
                         self.advance()  # Skip [
                         entity_prefix = self.current_token.value
@@ -951,9 +993,14 @@ class Parser:
                                 )
                                 ast.add_diagnostic(diagnostic)
                                 # Skip to next likely entity
-                                while self.current_token.type not in (TokenType.EOF, TokenType.LBRACKET):
-                                    if self.current_token.type == TokenType.IDENTIFIER and \
-                                       self.current_token.value in ENTITY_PREFIXES:
+                                while self.current_token.type not in (
+                                    TokenType.EOF,
+                                    TokenType.LBRACKET,
+                                ):
+                                    if (
+                                        self.current_token.type == TokenType.IDENTIFIER
+                                        and self.current_token.value in ENTITY_PREFIXES
+                                    ):
                                         break
                                     self.advance()
                         elif entity_prefix == "F":
@@ -970,8 +1017,10 @@ class Parser:
                                 ast.add_diagnostic(diagnostic)
                         else:
                             # Other entity types - skip the rest
-                            while self.current_token.type != TokenType.RBRACKET and \
-                                  self.current_token.type != TokenType.EOF:
+                            while (
+                                self.current_token.type != TokenType.RBRACKET
+                                and self.current_token.type != TokenType.EOF
+                            ):
                                 self.advance()
                             if self.current_token.type == TokenType.RBRACKET:
                                 self.advance()
@@ -1135,8 +1184,7 @@ class Parser:
 
         # Parse methods
         methods = []
-        while self.current_token.type == TokenType.IDENTIFIER and \
-              self.current_token.value == "F":
+        while self.current_token.type == TokenType.IDENTIFIER and self.current_token.value == "F":
             try:
                 method = self.parse_function(self.current_token.line)
                 methods.append(method)
@@ -1145,8 +1193,10 @@ class Parser:
                 # Skip this method and try to continue with next one
                 # Find next method or end of class
                 while self.current_token.type != TokenType.EOF:
-                    if self.current_token.type == TokenType.IDENTIFIER and \
-                       self.current_token.value == "F":
+                    if (
+                        self.current_token.type == TokenType.IDENTIFIER
+                        and self.current_token.value == "F"
+                    ):
                         # Found next method
                         break
                     if self.current_token.type == TokenType.LBRACKET:
@@ -1182,7 +1232,7 @@ def parse_file(file_path: str) -> PyShortAST:
         FileNotFoundError: If file doesn't exist
         ParseError: If parsing fails
     """
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         source = f.read()
 
     return parse_string(source, file_path)

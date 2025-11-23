@@ -6,16 +6,14 @@ Generates Mermaid syntax for documentation-friendly visualizations:
 - Architecture diagrams: Module-level overview with layer organization
 """
 
-from typing import List, Set, Dict, Optional
 from dataclasses import dataclass
+
 from ..core.ast_nodes import (
-    PyShortAST,
-    Entity,
     Class,
+    Entity,
     Function,
+    PyShortAST,
     StateVar,
-    Reference,
-    DiagnosticSeverity,
 )
 
 
@@ -37,10 +35,10 @@ class MermaidConfig:
 class MermaidGenerator:
     """Generates Mermaid diagrams from PyShorthand ASTs."""
 
-    def __init__(self, config: Optional[MermaidConfig] = None):
+    def __init__(self, config: MermaidConfig | None = None):
         self.config = config or MermaidConfig()
         self.node_counter = 0
-        self.node_ids: Dict[str, str] = {}
+        self.node_ids: dict[str, str] = {}
 
     def generate(self, ast: PyShortAST) -> str:
         """Generate Mermaid diagram from AST."""
@@ -57,7 +55,7 @@ class MermaidGenerator:
 
         # Add metadata as subgraph if requested
         if self.config.include_metadata and ast.metadata.module_name:
-            lines.append(f"  subgraph Module[\"{ast.metadata.module_name}\"]")
+            lines.append(f'  subgraph Module["{ast.metadata.module_name}"]')
             if ast.metadata.role:
                 lines.append(f"    direction {self.config.direction}")
 
@@ -73,7 +71,7 @@ class MermaidGenerator:
             for func in ast.functions:
                 node_id = self._get_node_id(func.name)
                 label = self._format_function_label(func)
-                lines.append(f"    {node_id}[[\"{label}\"]]")
+                lines.append(f'    {node_id}[["{label}"]]')
 
             lines.append("  end")
         else:
@@ -86,7 +84,7 @@ class MermaidGenerator:
             for func in ast.functions:
                 node_id = self._get_node_id(func.name)
                 label = self._format_function_label(func)
-                lines.append(f"  {node_id}[[\"{label}\"]]")
+                lines.append(f'  {node_id}[["{label}"]]')
 
         # Add dependencies as edges
         if self.config.show_dependencies:
@@ -122,8 +120,7 @@ class MermaidGenerator:
                 if self.config.show_methods:
                     for method in entity.methods:
                         params = ", ".join(
-                            f"{p.name}: {p.type_spec or 'Any'}"
-                            for p in method.parameters
+                            f"{p.name}: {p.type_spec or 'Any'}" for p in method.parameters
                         )
                         ret_type = method.return_type or "void"
                         lines.append(f"    {method.name}({params}): {ret_type}")
@@ -146,7 +143,7 @@ class MermaidGenerator:
         # Add nodes
         for entity in ast.entities:
             node_id = self._get_node_id(entity.name)
-            lines.append(f"  {node_id}[\"{entity.name}\"]")
+            lines.append(f'  {node_id}["{entity.name}"]')
 
         # Add edges from dependencies
         for entity in ast.entities:
@@ -180,7 +177,7 @@ class MermaidGenerator:
 
         # Truncate if too long
         if len(label) > self.config.max_label_length:
-            label = label[:self.config.max_label_length - 3] + "..."
+            label = label[: self.config.max_label_length - 3] + "..."
 
         return label
 
@@ -190,7 +187,7 @@ class MermaidGenerator:
         label = f"{func.name}({param_count} params)"
 
         if len(label) > self.config.max_label_length:
-            label = label[:self.config.max_label_length - 3] + "..."
+            label = label[: self.config.max_label_length - 3] + "..."
 
         return label
 
@@ -207,12 +204,12 @@ class MermaidGenerator:
         if isinstance(entity, Class):
             # Rectangle with rounded corners for classes
             label = self._format_class_label(entity)
-            return f"[\"{label}\"]"
+            return f'["{label}"]'
         else:
             # Default rectangle
-            return f"[\"{entity.name}\"]"
+            return f'["{entity.name}"]'
 
-    def _add_dependency_edges(self, cls: Class, lines: List[str]) -> None:
+    def _add_dependency_edges(self, cls: Class, lines: list[str]) -> None:
         """Add edges for class dependencies."""
         entity_id = self._get_node_id(cls.name)
 
@@ -234,19 +231,16 @@ class MermaidGenerator:
     def _get_risk_color(self, risk: str) -> str:
         """Get color code for risk level."""
         risk_colors = {
-            "High": "#ff6b6b",      # Red
-            "Medium": "#ffd93d",    # Yellow
-            "Low": "#6bcf7f",       # Green
+            "High": "#ff6b6b",  # Red
+            "Medium": "#ffd93d",  # Yellow
+            "Low": "#6bcf7f",  # Green
             "Critical": "#c92a2a",  # Dark red
         }
         return risk_colors.get(risk, "#a8dadc")  # Default light blue
 
 
 def generate_mermaid(
-    ast: PyShortAST,
-    diagram_type: str = "flowchart",
-    direction: str = "TB",
-    **kwargs
+    ast: PyShortAST, diagram_type: str = "flowchart", direction: str = "TB", **kwargs
 ) -> str:
     """
     Convenience function to generate Mermaid diagram.
@@ -268,20 +262,13 @@ def generate_mermaid(
         >>> diagram = generate_mermaid(ast, diagram_type="flowchart")
         >>> print(diagram)
     """
-    config = MermaidConfig(
-        diagram_type=diagram_type,
-        direction=direction,
-        **kwargs
-    )
+    config = MermaidConfig(diagram_type=diagram_type, direction=direction, **kwargs)
     generator = MermaidGenerator(config)
     return generator.generate(ast)
 
 
 def save_mermaid(
-    ast: PyShortAST,
-    output_path: str,
-    diagram_type: str = "flowchart",
-    **kwargs
+    ast: PyShortAST, output_path: str, diagram_type: str = "flowchart", **kwargs
 ) -> None:
     """
     Generate and save Mermaid diagram to file.

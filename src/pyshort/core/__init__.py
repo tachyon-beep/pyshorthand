@@ -5,22 +5,22 @@ and representing PyShorthand files.
 """
 
 from pyshort.core.ast_nodes import (
-    PyShortAST,
-    Metadata,
-    Entity,
     Class,
     Data,
-    Interface,
-    Module,
-    Reference,
-    StateVar,
-    Function,
-    Parameter,
-    Statement,
-    Expression,
-    Tag,
     Diagnostic,
     DiagnosticSeverity,
+    Entity,
+    Expression,
+    Function,
+    Interface,
+    Metadata,
+    Module,
+    Parameter,
+    PyShortAST,
+    Reference,
+    Statement,
+    StateVar,
+    Tag,
 )
 
 __all__ = [

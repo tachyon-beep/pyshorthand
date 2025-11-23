@@ -10,10 +10,9 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -24,6 +23,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ab_test_framework import Question, load_test_suite
+
 from pyshort.ecosystem.tools import CodebaseExplorer
 
 
@@ -34,7 +34,7 @@ class EcosystemResult:
     question_id: int
     answer: str
     is_correct: bool
-    tools_called: List[str]  # Which tools were used
+    tools_called: list[str]  # Which tools were used
     pyshorthand_tokens: int  # Base PyShorthand overview
     tool_tokens: int  # Additional tokens from tool calls
     total_tokens: int  # Total input tokens
@@ -208,7 +208,7 @@ Provide a clear, concise answer."""
 
 def run_ecosystem_test(
     model: str = "anthropic/claude-sonnet-4.5",
-) -> List[EcosystemResult]:
+) -> list[EcosystemResult]:
     """Run the ecosystem A/B test.
 
     Args:
@@ -239,8 +239,12 @@ def run_ecosystem_test(
         results.append(result)
 
         status = "✓" if result.is_correct else "✗"
-        print(f"  {status} Tools: {', '.join(result.tools_called) if result.tools_called else 'none'}")
-        print(f"  Tokens: {result.pyshorthand_tokens} (base) + {result.tool_tokens} (tools) = {result.total_tokens}")
+        print(
+            f"  {status} Tools: {', '.join(result.tools_called) if result.tools_called else 'none'}"
+        )
+        print(
+            f"  Tokens: {result.pyshorthand_tokens} (base) + {result.tool_tokens} (tools) = {result.total_tokens}"
+        )
         print()
 
         # Rate limiting
@@ -249,7 +253,7 @@ def run_ecosystem_test(
     return results
 
 
-def save_results(results: List[EcosystemResult], model: str):
+def save_results(results: list[EcosystemResult], model: str):
     """Save results to JSON file."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"ecosystem_{model.replace('/', '_')}_{timestamp}.json"
@@ -264,7 +268,7 @@ def save_results(results: List[EcosystemResult], model: str):
     return filepath
 
 
-def analyze_results(results: List[EcosystemResult]):
+def analyze_results(results: list[EcosystemResult]):
     """Analyze and print results summary."""
     print("\n" + "=" * 80)
     print("ECOSYSTEM TEST RESULTS")
@@ -283,7 +287,7 @@ def analyze_results(results: List[EcosystemResult]):
     avg_tool = sum(r.tool_tokens for r in results) / len(results)
     avg_total = sum(r.total_tokens for r in results) / len(results)
 
-    print(f"Average tokens per question:")
+    print("Average tokens per question:")
     print(f"  PyShorthand base: {avg_pyshorthand:.0f}")
     print(f"  Tool calls: {avg_tool:.0f}")
     print(f"  Total: {avg_total:.0f}")
@@ -305,8 +309,8 @@ def analyze_results(results: List[EcosystemResult]):
 
     # Comparison to baseline (from previous test)
     print("Comparison to baselines:")
-    print(f"  Full code: 35% accuracy, 5,348 tokens")
-    print(f"  PyShorthand v1.5: 35% accuracy, 894 tokens")
+    print("  Full code: 35% accuracy, 5,348 tokens")
+    print("  PyShorthand v1.5: 35% accuracy, 894 tokens")
     print(f"  Ecosystem: {accuracy:.1f}% accuracy, {avg_total:.0f} tokens")
     print()
 

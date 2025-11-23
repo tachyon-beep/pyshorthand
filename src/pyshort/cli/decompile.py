@@ -22,7 +22,7 @@ def decompile_command(args: Namespace) -> int:
 
     # If no output path, default to input path with .pys extension
     if not output_path:
-        output_path = str(Path(input_path).with_suffix('.pys'))
+        output_path = str(Path(input_path).with_suffix(".pys"))
 
     try:
         result = decompile_file(input_path, output_path, aggressive=aggressive)
@@ -36,12 +36,13 @@ def decompile_command(args: Namespace) -> int:
 
         return 0
 
-    except (IOError, SyntaxError, RuntimeError) as e:
+    except (OSError, SyntaxError, RuntimeError) as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc(file=sys.stderr)
         return 1
 
@@ -50,9 +51,7 @@ def main() -> int:
     """Main entry point for py2short command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Generate PyShorthand from Python source code"
-    )
+    parser = argparse.ArgumentParser(description="Generate PyShorthand from Python source code")
     parser.add_argument("input", help="Input Python file")
     parser.add_argument("-o", "--output", help="Output .pys file (defaults to input.pys)")
     parser.add_argument(

@@ -15,7 +15,6 @@ Categories:
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -25,7 +24,7 @@ class ErrorCode:
     code: str
     category: str
     description: str
-    explanation: Optional[str] = None
+    explanation: str | None = None
 
 
 # ============================================================================
@@ -58,7 +57,6 @@ ERROR_CODES = {
         description="Missing required module name",
         explanation="All PyShorthand files should have [M:ModuleName] metadata",
     ),
-
     # Type Errors (E101-E199)
     "E101": ErrorCode(
         code="E101",
@@ -78,7 +76,6 @@ ERROR_CODES = {
         description="Invalid shape dimension",
         explanation="Shape dimensions should use dimension variables (e.g., N, M, D) or integers",
     ),
-
     # Structure Errors (E201-E299)
     "E201": ErrorCode(
         code="E201",
@@ -98,7 +95,6 @@ ERROR_CODES = {
         description="Invalid dependency reference",
         explanation="Dependency references must point to valid entities",
     ),
-
     # Naming Errors (E301-E399)
     "E301": ErrorCode(
         code="E301",
@@ -112,7 +108,6 @@ ERROR_CODES = {
         description="Reserved keyword used as name",
         explanation="Cannot use Python reserved keywords as identifiers",
     ),
-
     # Style Warnings (W001-W099)
     "W001": ErrorCode(
         code="W001",
@@ -132,7 +127,6 @@ ERROR_CODES = {
         description="Missing metadata",
         explanation="Consider adding metadata headers for better documentation",
     ),
-
     # Best Practice Warnings (W101-W199)
     "W101": ErrorCode(
         code="W101",
@@ -161,12 +155,14 @@ ERROR_CODES = {
 }
 
 
-def get_error_code(code: str) -> Optional[ErrorCode]:
+def get_error_code(code: str) -> ErrorCode | None:
     """Get error code definition."""
     return ERROR_CODES.get(code)
 
 
-def format_diagnostic_with_code(severity: str, code: str, message: str, suggestion: Optional[str] = None) -> str:
+def format_diagnostic_with_code(
+    severity: str, code: str, message: str, suggestion: str | None = None
+) -> str:
     """Format a diagnostic message with error code."""
     parts = [f"[{severity.lower()}:{code}] {message}"]
 
@@ -180,7 +176,7 @@ def format_diagnostic_with_code(severity: str, code: str, message: str, suggesti
     return "\n".join(parts)
 
 
-def list_error_codes(category: Optional[str] = None) -> list:
+def list_error_codes(category: str | None = None) -> list:
     """List all error codes, optionally filtered by category."""
     codes = list(ERROR_CODES.values())
 
@@ -190,7 +186,7 @@ def list_error_codes(category: Optional[str] = None) -> list:
     return sorted(codes, key=lambda x: x.code)
 
 
-def explain_error_code(code: str) -> Optional[str]:
+def explain_error_code(code: str) -> str | None:
     """Get detailed explanation for an error code."""
     error_info = get_error_code(code)
     if not error_info:
@@ -203,7 +199,7 @@ def explain_error_code(code: str) -> Optional[str]:
     ]
 
     if error_info.explanation:
-        explanation.append(f"\nExplanation:")
+        explanation.append("\nExplanation:")
         explanation.append(f"  {error_info.explanation}")
 
     return "\n".join(explanation)
@@ -224,4 +220,6 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 60)
     print("\nExample diagnostic:")
-    print(format_diagnostic_with_code("error", "E001", "Invalid role: 'Cor'", "Did you mean 'Core'?"))
+    print(
+        format_diagnostic_with_code("error", "E001", "Invalid role: 'Cor'", "Did you mean 'Core'?")
+    )

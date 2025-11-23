@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pyshort.decompiler import decompile, decompile_file
+from pyshort.decompiler import decompile_file
 
 
 def main():
@@ -25,36 +25,20 @@ Examples:
 
   # Process multiple files
   py2short src/*.py --output-dir out/
-        """
+        """,
     )
 
-    parser.add_argument(
-        "input",
-        nargs="+",
-        help="Python source file(s) to decompile"
-    )
+    parser.add_argument("input", nargs="+", help="Python source file(s) to decompile")
+
+    parser.add_argument("-o", "--output", help="Output file path (for single input file)")
+
+    parser.add_argument("--output-dir", help="Output directory (for multiple input files)")
 
     parser.add_argument(
-        "-o", "--output",
-        help="Output file path (for single input file)"
+        "-a", "--aggressive", action="store_true", help="Use aggressive type inference"
     )
 
-    parser.add_argument(
-        "--output-dir",
-        help="Output directory (for multiple input files)"
-    )
-
-    parser.add_argument(
-        "-a", "--aggressive",
-        action="store_true",
-        help="Use aggressive type inference"
-    )
-
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
@@ -66,11 +50,7 @@ Examples:
             if args.verbose:
                 print(f"Decompiling {input_file}...", file=sys.stderr)
 
-            result = decompile_file(
-                input_file,
-                output_path=args.output,
-                aggressive=args.aggressive
-            )
+            result = decompile_file(input_file, output_path=args.output, aggressive=args.aggressive)
 
             # If no output file, print to stdout
             if not args.output:
@@ -99,11 +79,7 @@ Examples:
                 if args.verbose:
                     print(f"Decompiling {input_file} -> {output_path}...", file=sys.stderr)
 
-                decompile_file(
-                    input_file,
-                    output_path=str(output_path),
-                    aggressive=args.aggressive
-                )
+                decompile_file(input_file, output_path=str(output_path), aggressive=args.aggressive)
 
             except Exception as e:
                 print(f"Error processing {input_file}: {e}", file=sys.stderr)

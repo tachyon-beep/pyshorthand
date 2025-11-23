@@ -5,10 +5,9 @@ Validates that method signatures are consistent with their implementations.
 Part of P25: Method signature consistency.
 """
 
-from typing import List
 from dataclasses import dataclass
 
-from ..core.ast_nodes import Module, Class, Function
+from ..core.ast_nodes import Class, Function, Module
 
 
 @dataclass
@@ -27,7 +26,7 @@ class MethodSignatureError:
 class MethodSignatureValidator:
     """Validates method signature consistency in PyShorthand AST."""
 
-    def validate(self, module: Module) -> List[MethodSignatureError]:
+    def validate(self, module: Module) -> list[MethodSignatureError]:
         """
         Validate method signatures and class consistency in a module.
 
@@ -48,7 +47,7 @@ class MethodSignatureValidator:
 
         return errors
 
-    def _validate_state_variables(self, cls: Class) -> List[MethodSignatureError]:
+    def _validate_state_variables(self, cls: Class) -> list[MethodSignatureError]:
         """Validate state variables in a class (no duplicates)."""
         errors = []
 
@@ -76,7 +75,7 @@ class MethodSignatureValidator:
 
         return errors
 
-    def _validate_class_methods(self, cls: Class) -> List[MethodSignatureError]:
+    def _validate_class_methods(self, cls: Class) -> list[MethodSignatureError]:
         """Validate all methods in a class."""
         errors = []
 
@@ -86,9 +85,7 @@ class MethodSignatureValidator:
 
         return errors
 
-    def _validate_method(
-        self, class_name: str, method: Function
-    ) -> List[MethodSignatureError]:
+    def _validate_method(self, class_name: str, method: Function) -> list[MethodSignatureError]:
         """
         Validate a single method's signature consistency.
 
@@ -149,7 +146,7 @@ class MethodSignatureValidator:
         return errors
 
 
-def validate_method_signatures(module: Module) -> List[MethodSignatureError]:
+def validate_method_signatures(module: Module) -> list[MethodSignatureError]:
     """
     Convenience function to validate method signatures.
 

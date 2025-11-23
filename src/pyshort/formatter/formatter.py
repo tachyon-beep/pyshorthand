@@ -4,9 +4,8 @@ Provides consistent, opinionated formatting for PyShorthand files.
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
 
-from pyshort.core.ast_nodes import Class, Function, PyShortAST, StateVar, Statement
+from pyshort.core.ast_nodes import Class, Function, PyShortAST, Statement, StateVar
 from pyshort.core.parser import parse_file, parse_string
 from pyshort.core.symbols import to_ascii, to_unicode
 
@@ -27,7 +26,7 @@ class FormatConfig:
 class Formatter:
     """Formats PyShorthand code for consistency."""
 
-    def __init__(self, config: Optional[FormatConfig] = None):
+    def __init__(self, config: FormatConfig | None = None):
         """Initialize formatter.
 
         Args:
@@ -80,7 +79,7 @@ class Formatter:
 
         return result
 
-    def _format_metadata(self, ast: PyShortAST) -> List[str]:
+    def _format_metadata(self, ast: PyShortAST) -> list[str]:
         """Format metadata header."""
         lines = []
         meta = ast.metadata
@@ -125,7 +124,7 @@ class Formatter:
 
         return lines
 
-    def _format_class(self, cls: Class) -> List[str]:
+    def _format_class(self, cls: Class) -> list[str]:
         """Format a class definition.
 
         v1.5 supports:
@@ -181,7 +180,7 @@ class Formatter:
 
         return lines
 
-    def _format_state_variables(self, state_vars: List[StateVar]) -> List[str]:
+    def _format_state_variables(self, state_vars: list[StateVar]) -> list[str]:
         """Format state variables with alignment."""
         if not state_vars:
             return []
@@ -235,7 +234,7 @@ class Formatter:
 
         return line
 
-    def _format_tags(self, tags: List) -> str:
+    def _format_tags(self, tags: list) -> str:
         """Format tags in v1.4 grouped order.
 
         Order: [Decorators] [HTTP Routes] [Operations] [Complexity]
@@ -250,17 +249,23 @@ class Formatter:
             return ""
 
         # Group tags by type
-        decorator_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "decorator"]
-        route_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "http_route"]
-        operation_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "operation"]
-        complexity_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "complexity"]
-        custom_tags = [str(t) for t in tags if hasattr(t, 'tag_type') and t.tag_type == "custom"]
+        decorator_tags = [
+            str(t) for t in tags if hasattr(t, "tag_type") and t.tag_type == "decorator"
+        ]
+        route_tags = [str(t) for t in tags if hasattr(t, "tag_type") and t.tag_type == "http_route"]
+        operation_tags = [
+            str(t) for t in tags if hasattr(t, "tag_type") and t.tag_type == "operation"
+        ]
+        complexity_tags = [
+            str(t) for t in tags if hasattr(t, "tag_type") and t.tag_type == "complexity"
+        ]
+        custom_tags = [str(t) for t in tags if hasattr(t, "tag_type") and t.tag_type == "custom"]
 
         # Combine in order
         ordered = decorator_tags + route_tags + operation_tags + complexity_tags + custom_tags
         return " ".join(ordered) if ordered else ""
 
-    def _format_function(self, func: Function, indent: int = 0) -> List[str]:
+    def _format_function(self, func: Function, indent: int = 0) -> list[str]:
         """Format a function definition."""
         lines = []
         indent_str = " " * (self.config.indent * indent)
@@ -311,7 +316,7 @@ class Formatter:
 
         return lines
 
-    def _format_statements(self, statements: List[Statement]) -> List[str]:
+    def _format_statements(self, statements: list[Statement]) -> list[str]:
         """Format a list of statements."""
         return [
             self._format_statement(stmt, 0)
@@ -351,7 +356,11 @@ class Formatter:
         if stmt.statement_type == "conditional":
             tags_str = self._format_tags(stmt.tags)
             if stmt.condition:
-                return f"{indent_str}{prefix}?{stmt.condition} → {tags_str}" if tags_str else f"{indent_str}{prefix}?{stmt.condition}"
+                return (
+                    f"{indent_str}{prefix}?{stmt.condition} → {tags_str}"
+                    if tags_str
+                    else f"{indent_str}{prefix}?{stmt.condition}"
+                )
             return f"{indent_str}{prefix}?"
 
         if stmt.lhs and stmt.operator and stmt.rhs:
@@ -369,7 +378,7 @@ class Formatter:
         return ""
 
 
-def format_string(source: str, config: Optional[FormatConfig] = None) -> str:
+def format_string(source: str, config: FormatConfig | None = None) -> str:
     """Format PyShorthand source code.
 
     Args:
@@ -385,7 +394,7 @@ def format_string(source: str, config: Optional[FormatConfig] = None) -> str:
 
 
 def format_file(
-    file_path: str, config: Optional[FormatConfig] = None, in_place: bool = False
+    file_path: str, config: FormatConfig | None = None, in_place: bool = False
 ) -> str:
     """Format a PyShorthand file.
 

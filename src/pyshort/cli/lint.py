@@ -49,7 +49,9 @@ def lint_command(args: Namespace) -> int:
                     all_diagnostics.append({"file": str(file_path), "diagnostics": diagnostics})
 
                     errors = sum(1 for d in diagnostics if d.severity == DiagnosticSeverity.ERROR)
-                    warnings = sum(1 for d in diagnostics if d.severity == DiagnosticSeverity.WARNING)
+                    warnings = sum(
+                        1 for d in diagnostics if d.severity == DiagnosticSeverity.WARNING
+                    )
 
                     total_errors += errors
                     total_warnings += warnings
@@ -113,6 +115,7 @@ def lint_command(args: Namespace) -> int:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -121,9 +124,7 @@ def main() -> int:
     """Main entry point for pyshort-lint command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Validate and lint PyShorthand files"
-    )
+    parser = argparse.ArgumentParser(description="Validate and lint PyShorthand files")
     parser.add_argument("input", help="Input .pys file or directory")
     parser.add_argument("--strict", action="store_true", help="Treat warnings as errors")
     parser.add_argument("--json", action="store_true", help="Output diagnostics as JSON")

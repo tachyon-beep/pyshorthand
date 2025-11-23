@@ -10,26 +10,26 @@ Usage:
     pyshort-viz input.pys --type classDiagram --direction LR
 """
 
-import sys
 import argparse
-from pathlib import Path
-from typing import Optional
+import sys
 from argparse import Namespace
+from pathlib import Path
 
 from ..core.parser import parse_file
-from ..visualization.mermaid import generate_mermaid, MermaidConfig
+from ..visualization.mermaid import MermaidConfig
 
 
 def viz_command(args: Namespace) -> int:
     """Command handler for pyshort viz subcommand."""
+
     # Convert args to expected format
     class VizArgs:
         def __init__(self, args):
             self.input = Path(args.input)
             self.output = Path(args.output) if args.output else None
             self.format = "mermaid"  # Default format
-            self.type = args.type if hasattr(args, 'type') else "flowchart"
-            self.direction = args.direction if hasattr(args, 'direction') else "TB"
+            self.type = args.type if hasattr(args, "type") else "flowchart"
+            self.direction = args.direction if hasattr(args, "direction") else "TB"
             self.no_state = False
             self.no_methods = False
             self.no_deps = False
@@ -73,6 +73,7 @@ def _viz_main(parsed_args) -> int:
             )
 
             from ..visualization.mermaid import MermaidGenerator
+
             generator = MermaidGenerator(config)
             diagram = generator.generate(ast)
 
@@ -88,11 +89,12 @@ def _viz_main(parsed_args) -> int:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-def main(args: Optional[list] = None) -> int:
+def main(args: list | None = None) -> int:
     """Main entry point for visualization CLI."""
     parser = argparse.ArgumentParser(
         description="Generate visualizations from PyShorthand files",
@@ -106,27 +108,31 @@ def main(args: Optional[list] = None) -> int:
     )
 
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         type=Path,
         help="Output file (default: print to stdout)",
     )
 
     parser.add_argument(
-        "-f", "--format",
+        "-f",
+        "--format",
         choices=["mermaid"],
         default="mermaid",
         help="Output format (default: mermaid)",
     )
 
     parser.add_argument(
-        "-t", "--type",
+        "-t",
+        "--type",
         choices=["flowchart", "classDiagram", "graph"],
         default="flowchart",
         help="Diagram type (default: flowchart)",
     )
 
     parser.add_argument(
-        "-d", "--direction",
+        "-d",
+        "--direction",
         choices=["TB", "LR", "RL", "BT"],
         default="TB",
         help="Diagram direction: TB (top-bottom), LR (left-right), RL, BT (default: TB)",

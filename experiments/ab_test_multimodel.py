@@ -11,22 +11,21 @@ from the conciseness.
 """
 
 import os
-import json
-import time
-import requests
-from pathlib import Path
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
-from datetime import datetime
 import sys
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(Path(__file__).parent.parent / '.env')
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 # Import from the main framework
 sys.path.insert(0, str(Path(__file__).parent))
-from ab_test_framework import Question, TestResult, load_test_suite, save_results
+from ab_test_framework import TestResult, load_test_suite, save_results
 
 
 class MultiModelClient:
@@ -37,7 +36,7 @@ class MultiModelClient:
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
         self.model = model
 
-    def ask_question(self, system_prompt: str, question: str, code_context: str) -> Dict[str, Any]:
+    def ask_question(self, system_prompt: str, question: str, code_context: str) -> dict[str, Any]:
         """Ask a question given code context"""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -61,7 +60,7 @@ Provide a clear, concise answer. If you cannot determine the answer from the pro
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_prompt}
+                {"role": "user", "content": full_prompt},
             ],
         }
 
@@ -84,10 +83,7 @@ Provide a clear, concise answer. If you cannot determine the answer from the pro
 
 
 def run_multimodel_experiment(
-    original_code_path: str,
-    pyshorthand_code_path: str,
-    output_dir: str,
-    models: List[str]
+    original_code_path: str, pyshorthand_code_path: str, output_dir: str, models: list[str]
 ):
     """Run experiment with multiple models"""
 
@@ -145,25 +141,38 @@ def run_multimodel_experiment(
                     total_tokens=result_orig["total_tokens"],
                     is_correct=is_correct_orig,
                     completeness_score=1.0 if is_correct_orig else 0.5,
-                    notes=f"model={model}"
+                    notes=f"model={model}",
                 )
                 all_results.append(test_result_orig)
-                print(f"   ✓ Original: {test_result_orig.response_time_ms}ms, "
-                      f"{test_result_orig.total_tokens} tokens, "
-                      f"{'✅' if is_correct_orig else '❌'}")
+                print(
+                    f"   ✓ Original: {test_result_orig.response_time_ms}ms, "
+                    f"{test_result_orig.total_tokens} tokens, "
+                    f"{'✅' if is_correct_orig else '❌'}"
+                )
             except Exception as e:
                 print(f"   ❌ Original failed: {e}")
-                all_results.append(TestResult(
-                    question_id=question.id, format="original", answer=f"ERROR: {e}",
-                    response_time_ms=0, prompt_tokens=0, completion_tokens=0, total_tokens=0,
-                    is_correct=False, completeness_score=0.0, notes=f"model={model}"
-                ))
+                all_results.append(
+                    TestResult(
+                        question_id=question.id,
+                        format="original",
+                        answer=f"ERROR: {e}",
+                        response_time_ms=0,
+                        prompt_tokens=0,
+                        completion_tokens=0,
+                        total_tokens=0,
+                        is_correct=False,
+                        completeness_score=0.0,
+                        notes=f"model={model}",
+                    )
+                )
 
             time.sleep(1)  # Rate limiting
 
             # Test with PyShorthand
             try:
-                result_pysh = client.ask_question(system_prompt, question.question, pyshorthand_code)
+                result_pysh = client.ask_question(
+                    system_prompt, question.question, pyshorthand_code
+                )
                 is_correct_pysh = question.correct_answer.lower() in result_pysh["answer"].lower()
 
                 test_result_pysh = TestResult(
@@ -176,19 +185,30 @@ def run_multimodel_experiment(
                     total_tokens=result_pysh["total_tokens"],
                     is_correct=is_correct_pysh,
                     completeness_score=1.0 if is_correct_pysh else 0.5,
-                    notes=f"model={model}"
+                    notes=f"model={model}",
                 )
                 all_results.append(test_result_pysh)
-                print(f"   ✓ PyShort:  {test_result_pysh.response_time_ms}ms, "
-                      f"{test_result_pysh.total_tokens} tokens, "
-                      f"{'✅' if is_correct_pysh else '❌'}")
+                print(
+                    f"   ✓ PyShort:  {test_result_pysh.response_time_ms}ms, "
+                    f"{test_result_pysh.total_tokens} tokens, "
+                    f"{'✅' if is_correct_pysh else '❌'}"
+                )
             except Exception as e:
                 print(f"   ❌ PyShort failed: {e}")
-                all_results.append(TestResult(
-                    question_id=question.id, format="pyshorthand", answer=f"ERROR: {e}",
-                    response_time_ms=0, prompt_tokens=0, completion_tokens=0, total_tokens=0,
-                    is_correct=False, completeness_score=0.0, notes=f"model={model}"
-                ))
+                all_results.append(
+                    TestResult(
+                        question_id=question.id,
+                        format="pyshorthand",
+                        answer=f"ERROR: {e}",
+                        response_time_ms=0,
+                        prompt_tokens=0,
+                        completion_tokens=0,
+                        total_tokens=0,
+                        is_correct=False,
+                        completeness_score=0.0,
+                        notes=f"model={model}",
+                    )
+                )
 
             time.sleep(1)  # Rate limiting
 
@@ -212,8 +232,8 @@ if __name__ == "__main__":
     pyshorthand_path = "realworld_nanogpt.pys"
     output_dir = "experiments/results"
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("PYSHORTHAND MULTI-MODEL A/B TESTING")
-    print("="*80)
+    print("=" * 80)
 
     run_multimodel_experiment(original_path, pyshorthand_path, output_dir, models_to_test)

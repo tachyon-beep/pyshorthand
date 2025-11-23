@@ -4,13 +4,12 @@ Supports .pyshortrc files in INI format (zero dependencies).
 Searches for config in: current dir → parent dirs → home dir
 """
 
-import os
-from pathlib import Path
-from typing import Optional, Dict, Any
 from configparser import ConfigParser
+from pathlib import Path
+from typing import Any
 
 
-def find_config_file(start_path: Optional[Path] = None) -> Optional[Path]:
+def find_config_file(start_path: Path | None = None) -> Path | None:
     """
     Find .pyshortrc config file by walking up directory tree.
 
@@ -49,7 +48,7 @@ def find_config_file(start_path: Optional[Path] = None) -> Optional[Path]:
     return None
 
 
-def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
+def load_config(config_path: Path | None = None) -> dict[str, Any]:
     """
     Load configuration from .pyshortrc file.
 
@@ -112,7 +111,7 @@ def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     return config
 
 
-def merge_config_with_args(config: Dict[str, Any], args: Any, section: str) -> Dict[str, Any]:
+def merge_config_with_args(config: dict[str, Any], args: Any, section: str) -> dict[str, Any]:
     """
     Merge config file settings with CLI arguments.
 

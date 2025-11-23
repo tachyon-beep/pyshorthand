@@ -47,7 +47,10 @@ def parse_command(args: Namespace) -> int:
 
         # Show summary
         if ast.has_warnings():
-            print(f"\nWarnings: {len([d for d in ast.diagnostics if d.severity.value == 'warning'])}", file=sys.stderr)
+            print(
+                f"\nWarnings: {len([d for d in ast.diagnostics if d.severity.value == 'warning'])}",
+                file=sys.stderr,
+            )
 
         return 0
 
@@ -57,6 +60,7 @@ def parse_command(args: Namespace) -> int:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -65,9 +69,7 @@ def main() -> int:
     """Main entry point for pyshort-parse command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Parse PyShorthand files into structured AST"
-    )
+    parser = argparse.ArgumentParser(description="Parse PyShorthand files into structured AST")
     parser.add_argument("input", help="Input .pys file")
     parser.add_argument("-o", "--output", help="Output JSON file")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")

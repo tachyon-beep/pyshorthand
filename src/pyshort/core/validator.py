@@ -6,12 +6,11 @@ according to RFC Section 3.8 and general design principles.
 
 import re
 from abc import ABC, abstractmethod
-from typing import Iterator, List
+from collections.abc import Iterator
 
-from pyshort.core.ast_nodes import Diagnostic, DiagnosticSeverity, PyShortAST, Statement
+from pyshort.core.ast_nodes import Diagnostic, DiagnosticSeverity, PyShortAST
 from pyshort.core.enhanced_errors import suggest_did_you_mean
 from pyshort.core.symbols import (
-    DECORATOR_TAGS,
     HTTP_METHODS,
     VALID_LAYERS,
     VALID_LOCATIONS,
@@ -19,9 +18,6 @@ from pyshort.core.symbols import (
     VALID_ROLES,
     VALID_TAG_BASES,
     VALID_TYPES,
-    is_complexity_tag,
-    is_decorator_tag,
-    is_http_method,
 )
 
 
@@ -168,9 +164,8 @@ class ValidTagsRule(Rule):
                 for method in entity.methods:  # type: ignore
                     yield from self._check_tags(method.tags, method.line)
 
-    def _check_tags(self, tags: List, line: int) -> Iterator[Diagnostic]:
+    def _check_tags(self, tags: list, line: int) -> Iterator[Diagnostic]:
         """Check individual tags."""
-        from pyshort.core.ast_nodes import Tag
 
         for tag in tags:
             # v1.4 tag types don't need to match VALID_TAG_BASES
@@ -194,7 +189,6 @@ class ComplexityTagValidator(Rule):
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check complexity tags for valid O(...) notation."""
-        import re
 
         # Check statement tags
         for stmt in ast.statements:
@@ -210,16 +204,15 @@ class ComplexityTagValidator(Rule):
                 for method in entity.methods:  # type: ignore
                     yield from self._check_complexity_tags(method.tags, method.line)
 
-    def _check_complexity_tags(self, tags: List, line: int) -> Iterator[Diagnostic]:
+    def _check_complexity_tags(self, tags: list, line: int) -> Iterator[Diagnostic]:
         """Validate individual complexity tags."""
-        from pyshort.core.ast_nodes import Tag
 
         for tag in tags:
             if tag.tag_type != "complexity":
                 continue
 
             # Validate O(...) syntax
-            if not re.match(r'^O\(.+\)$', tag.base):
+            if not re.match(r"^O\(.+\)$", tag.base):
                 yield Diagnostic(
                     severity=DiagnosticSeverity.ERROR,
                     line=line,
@@ -260,9 +253,8 @@ class DecoratorTagValidator(Rule):
                 for method in entity.methods:  # type: ignore
                     yield from self._check_decorator_tags(method.tags, method.line, method.name)
 
-    def _check_decorator_tags(self, tags: List, line: int, func_name: str) -> Iterator[Diagnostic]:
+    def _check_decorator_tags(self, tags: list, line: int, func_name: str) -> Iterator[Diagnostic]:
         """Validate decorator tags for a function."""
-        from pyshort.core.ast_nodes import Tag
 
         decorator_tags = [tag for tag in tags if tag.tag_type == "decorator"]
 
@@ -331,9 +323,8 @@ class HTTPRouteValidator(Rule):
                 for method in entity.methods:  # type: ignore
                     yield from self._check_route_tags(method.tags, method.line, method.name)
 
-    def _check_route_tags(self, tags: List, line: int, func_name: str) -> Iterator[Diagnostic]:
+    def _check_route_tags(self, tags: list, line: int, func_name: str) -> Iterator[Diagnostic]:
         """Validate HTTP route tags."""
-        from pyshort.core.ast_nodes import Tag
 
         route_tags = [tag for tag in tags if tag.tag_type == "http_route"]
 
@@ -368,15 +359,20 @@ class HTTPRouteValidator(Rule):
                     line=line,
                     column=1,
                     message=f"HTTP path must start with '/': {tag.http_path}",
-                    suggestion=f"Change to: [GET /{tag.http_path}]" if tag.http_path else "Use absolute path starting with '/'",
+                    suggestion=(
+                        f"Change to: [GET /{tag.http_path}]"
+                        if tag.http_path
+                        else "Use absolute path starting with '/'"
+                    ),
                     code="E307",
                 )
 
             # Validate parameter syntax {param_name}
             if tag.http_path and "{" in tag.http_path:
                 import re
+
                 # Check for valid parameter names
-                params = re.findall(r'\{([^}]+)\}', tag.http_path)
+                params = re.findall(r"\{([^}]+)\}", tag.http_path)
                 for param in params:
                     if not param.isidentifier():
                         yield Diagnostic(
@@ -395,15 +391,12 @@ class SystemMutationSafetyRule(Rule):
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check system mutation safety."""
         for func in ast.functions:
-            has_system_mutation = any(
-                stmt.is_system_mutation for stmt in func.body
-            )
+            has_system_mutation = any(stmt.is_system_mutation for stmt in func.body)
 
             if has_system_mutation:
                 # Check if function or module is marked high risk
-                is_high_risk = (
-                    ast.metadata.risk == "High"
-                    or any(tag.base == "Risk" and "High" in tag.qualifiers for tag in func.tags)
+                is_high_risk = ast.metadata.risk == "High" or any(
+                    tag.base == "Risk" and "High" in tag.qualifiers for tag in func.tags
                 )
 
                 if not is_high_risk:
@@ -560,7 +553,7 @@ class Linter:
             strict: If True, warnings become errors
         """
         self.strict = strict
-        self.rules: List[Rule] = [
+        self.rules: list[Rule] = [
             MandatoryMetadataRule(),
             ValidMetadataValuesRule(),
             DimensionConsistencyRule(),
@@ -585,7 +578,7 @@ class Linter:
         """
         self.rules.append(rule)
 
-    def check(self, ast: PyShortAST) -> List[Diagnostic]:
+    def check(self, ast: PyShortAST) -> list[Diagnostic]:
         """Run all rules against an AST.
 
         Args:
@@ -612,7 +605,7 @@ class Linter:
 
         return diagnostics
 
-    def check_file(self, file_path: str) -> List[Diagnostic]:
+    def check_file(self, file_path: str) -> list[Diagnostic]:
         """Check a PyShorthand file.
 
         Args:
@@ -629,7 +622,7 @@ class Linter:
         return diagnostics
 
 
-def validate_file(file_path: str, strict: bool = False) -> List[Diagnostic]:
+def validate_file(file_path: str, strict: bool = False) -> list[Diagnostic]:
     """Validate a PyShorthand file.
 
     Args:

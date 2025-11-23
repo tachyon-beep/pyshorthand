@@ -9,8 +9,8 @@ follows the actual runtime path through function calls.
 """
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Callable
 
 from pyshort.core.ast_nodes import (
     Class,
@@ -27,10 +27,10 @@ class ExecutionStep:
 
     entity_name: str  # Function/method being executed
     depth: int  # Call depth (0 = entry point)
-    statement: Optional[Statement] = None  # The statement being executed
-    variables_in_scope: Set[str] = field(default_factory=set)
-    calls_made: List[str] = field(default_factory=list)  # Functions called from here
-    state_accessed: Set[str] = field(default_factory=set)  # State vars accessed
+    statement: Statement | None = None  # The statement being executed
+    variables_in_scope: set[str] = field(default_factory=set)
+    calls_made: list[str] = field(default_factory=list)  # Functions called from here
+    state_accessed: set[str] = field(default_factory=set)  # State vars accessed
 
 
 @dataclass
@@ -38,11 +38,11 @@ class ExecutionFlow:
     """Complete execution flow trace for a function."""
 
     entry_point: str  # Starting function/method
-    steps: List[ExecutionStep] = field(default_factory=list)
+    steps: list[ExecutionStep] = field(default_factory=list)
     max_depth: int = 0
     total_functions_called: int = 0
-    variables_accessed: Set[str] = field(default_factory=set)
-    state_accessed: Set[str] = field(default_factory=set)
+    variables_accessed: set[str] = field(default_factory=set)
+    state_accessed: set[str] = field(default_factory=set)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -137,7 +137,7 @@ class ExecutionFlow:
                     call_list += "..."
                 label += f"<br/>→ {call_list}"
 
-            lines.append(f"    {node_id}[\"{label}\"]:::depth{step.depth}")
+            lines.append(f'    {node_id}["{label}"]:::depth{step.depth}')
 
         lines.append("")
 
@@ -160,7 +160,9 @@ class ExecutionFlow:
         for depth in sorted(depths):
             color_idx = min(depth, len(colors) - 1)
             fill, stroke, text = colors[color_idx]
-            lines.append(f"    classDef depth{depth} fill:{fill},stroke:{stroke},color:{text},stroke-width:2px")
+            lines.append(
+                f"    classDef depth{depth} fill:{fill},stroke:{stroke},color:{text},stroke-width:2px"
+            )
 
         return "\n".join(lines)
 
@@ -212,7 +214,9 @@ class ExecutionFlow:
             color_idx = min(step.depth, len(colors) - 1)
             fill, font = colors[color_idx]
 
-            lines.append(f'    {node_id} [label="{label}", style=filled, fillcolor="{fill}", fontcolor={font}, penwidth=2];')
+            lines.append(
+                f'    {node_id} [label="{label}", style=filled, fillcolor="{fill}", fontcolor={font}, penwidth=2];'
+            )
 
         lines.append("")
 
@@ -357,7 +361,7 @@ class ExecutionFlow:
 
         return new_flow
 
-    def get_steps_at_depth(self, depth: int) -> List[ExecutionStep]:
+    def get_steps_at_depth(self, depth: int) -> list[ExecutionStep]:
         """Get all execution steps at a specific depth.
 
         Args:
@@ -372,7 +376,7 @@ class ExecutionFlow:
         """
         return [step for step in self.steps if step.depth == depth]
 
-    def get_call_chain(self) -> List[str]:
+    def get_call_chain(self) -> list[str]:
         """Get the execution call chain as a list of entity names.
 
         Returns:
@@ -389,10 +393,10 @@ class ExecutionFlowTracer:
     """Traces execution flow through PyShorthand code."""
 
     def __init__(self):
-        self.entity_map: Dict[str, Entity] = {}
-        self.function_map: Dict[str, Function] = {}
-        self.class_map: Dict[str, Class] = {}
-        self.call_graph: Dict[str, Set[str]] = {}  # entity -> functions it calls
+        self.entity_map: dict[str, Entity] = {}
+        self.function_map: dict[str, Function] = {}
+        self.class_map: dict[str, Class] = {}
+        self.call_graph: dict[str, set[str]] = {}  # entity -> functions it calls
 
     def trace_execution(
         self,
@@ -400,7 +404,7 @@ class ExecutionFlowTracer:
         entry_point: str,
         max_depth: int = 10,
         follow_calls: bool = True,
-    ) -> Optional[ExecutionFlow]:
+    ) -> ExecutionFlow | None:
         """Trace execution flow starting from an entry point.
 
         Args:
@@ -473,7 +477,7 @@ class ExecutionFlowTracer:
                         calls.add(ref_name)
                 self.call_graph[entity.name] = calls
 
-    def _extract_calls_from_statements(self, statements: List[Statement]) -> Set[str]:
+    def _extract_calls_from_statements(self, statements: list[Statement]) -> set[str]:
         """Extract function calls from a list of statements."""
         calls = set()
 
@@ -493,7 +497,10 @@ class ExecutionFlowTracer:
                         potential_func = words[-1]
                         # Check if it's alphanumeric (likely a function name)
                         if potential_func.replace("_", "").isalnum():
-                            if potential_func in self.function_map or potential_func in self.entity_map:
+                            if (
+                                potential_func in self.function_map
+                                or potential_func in self.entity_map
+                            ):
                                 calls.add(potential_func)
 
         return calls
@@ -505,7 +512,7 @@ class ExecutionFlowTracer:
         depth: int,
         max_depth: int,
         follow_calls: bool,
-        visited: Set[str],
+        visited: set[str],
     ) -> None:
         """Recursively trace execution through an entity."""
         # Prevent infinite recursion
@@ -594,7 +601,7 @@ def trace_execution(
     entry_point: str,
     max_depth: int = 10,
     follow_calls: bool = True,
-) -> Optional[ExecutionFlow]:
+) -> ExecutionFlow | None:
     """Convenience function to trace execution flow.
 
     Args:

@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """Quick test of ecosystem with just 3 questions (one per difficulty tier)."""
 
-import json
 import os
 import sys
 import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ab_test_framework import load_test_suite
+
 from pyshort.ecosystem.tools import CodebaseExplorer
 
 # Test with just 3 questions
 TEST_QUESTIONS = [1, 8, 20]  # Easy, Medium, Hard
+
 
 def quick_test():
     """Run quick ecosystem test with 3 questions."""
@@ -55,7 +57,14 @@ def quick_test():
         # Decide which tools to call based on category
         if q.category in ("signature", "structure"):
             # Try get_class_details
-            for class_name in ["GPT", "Block", "CausalSelfAttention", "MLP", "LayerNorm", "GPTConfig"]:
+            for class_name in [
+                "GPT",
+                "Block",
+                "CausalSelfAttention",
+                "MLP",
+                "LayerNorm",
+                "GPTConfig",
+            ]:
                 if class_name in q.question:
                     details = explorer.get_class_details(class_name, expand_nested=True)
                     if details:
@@ -67,12 +76,22 @@ def quick_test():
 
         elif q.category in ("implementation", "architecture"):
             # Try get_implementation
-            for method in ["forward", "generate", "configure_optimizers", "_init_weights", "from_pretrained"]:
+            for method in [
+                "forward",
+                "generate",
+                "configure_optimizers",
+                "_init_weights",
+                "from_pretrained",
+            ]:
                 if method in q.question:
                     for class_name in ["GPT", "Block", "CausalSelfAttention", "MLP"]:
-                        impl = explorer.get_implementation(f"{class_name}.{method}", include_context=False)
+                        impl = explorer.get_implementation(
+                            f"{class_name}.{method}", include_context=False
+                        )
                         if impl:
-                            context_parts.append(f"\n\n# Implementation of {class_name}.{method}:\n{impl}")
+                            context_parts.append(
+                                f"\n\n# Implementation of {class_name}.{method}:\n{impl}"
+                            )
                             tools_called.append(f"get_implementation({class_name}.{method})")
                             tool_tokens += len(impl.split())
                             print(f"  🔍 Called: get_implementation({class_name}.{method})")
@@ -92,8 +111,10 @@ Provide a clear, concise answer."""
 
         total_tokens = len(prompt.split())
 
-        print(f"  📊 Tokens: {pyshorthand_tokens} (base) + {tool_tokens} (tools) = {total_tokens} total")
-        print(f"  📡 Calling API...")
+        print(
+            f"  📊 Tokens: {pyshorthand_tokens} (base) + {tool_tokens} (tools) = {total_tokens} total"
+        )
+        print("  📡 Calling API...")
 
         # Call API
         try:
@@ -124,24 +145,28 @@ Provide a clear, concise answer."""
             print(f"  {status} Answer: {answer[:100]}...")
             print()
 
-            results.append({
-                "question_id": q.id,
-                "difficulty": q.difficulty,
-                "category": q.category,
-                "tools_called": tools_called,
-                "pyshorthand_tokens": pyshorthand_tokens,
-                "tool_tokens": tool_tokens,
-                "total_tokens": total_tokens,
-                "is_correct": is_correct,
-                "answer": answer,
-            })
+            results.append(
+                {
+                    "question_id": q.id,
+                    "difficulty": q.difficulty,
+                    "category": q.category,
+                    "tools_called": tools_called,
+                    "pyshorthand_tokens": pyshorthand_tokens,
+                    "tool_tokens": tool_tokens,
+                    "total_tokens": total_tokens,
+                    "is_correct": is_correct,
+                    "answer": answer,
+                }
+            )
 
         except Exception as e:
             print(f"  ❌ Error: {e}")
-            results.append({
-                "question_id": q.id,
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "question_id": q.id,
+                    "error": str(e),
+                }
+            )
 
         time.sleep(1)  # Rate limiting
 
@@ -162,11 +187,14 @@ Provide a clear, concise answer."""
         for r in results:
             if "error" not in r:
                 status = "✅" if r["is_correct"] else "❌"
-                print(f"  {status} Q{r['question_id']} ({r['difficulty']}): {r['total_tokens']} tokens, {len(r['tools_called'])} tools")
+                print(
+                    f"  {status} Q{r['question_id']} ({r['difficulty']}): {r['total_tokens']} tokens, {len(r['tools_called'])} tools"
+                )
 
     print()
     print("If this looks good, run the full test with:")
     print("  python experiments/ab_test_ecosystem.py")
+
 
 if __name__ == "__main__":
     quick_test()

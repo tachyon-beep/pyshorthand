@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 
 from openai import OpenAI
-from pyshort.decompiler.py2short import decompile_file
 
+from pyshort.decompiler.py2short import decompile_file
 
 # Load API key from .env
 env_file = Path(__file__).parent / ".env"
@@ -28,10 +28,7 @@ client = OpenAI(
 
 def query_llm(prompt: str, code: str, max_retries: int = 3):
     """Query LLM with code."""
-    messages = [{
-        "role": "user",
-        "content": f"{prompt}\n\nCode:\n```\n{code}\n```"
-    }]
+    messages = [{"role": "user", "content": f"{prompt}\n\nCode:\n```\n{code}\n```"}]
 
     for attempt in range(max_retries):
         try:
@@ -47,7 +44,7 @@ def query_llm(prompt: str, code: str, max_retries: int = 3):
 
         except Exception as e:
             if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff
+                wait_time = 2**attempt  # Exponential backoff
                 print(f"  ⚠️  Error: {type(e).__name__}, retrying in {wait_time}s...")
                 time.sleep(wait_time)
             else:
@@ -71,7 +68,7 @@ def main():
         python_code = f.read()
 
     # Generate PyShorthand
-    pys_file = test_file.with_suffix('.pys')
+    pys_file = test_file.with_suffix(".pys")
     if not pys_file.exists():
         print("Generating PyShorthand...")
         pyshorthand_code = decompile_file(str(test_file), str(pys_file))
@@ -92,7 +89,7 @@ def main():
     # Two focused questions
     questions = [
         "What are the main classes in this code and what do they represent?",
-        "What deep learning framework is this code using and what model architecture does it implement?"
+        "What deep learning framework is this code using and what model architecture does it implement?",
     ]
 
     results = []
@@ -116,18 +113,22 @@ def main():
         speedup = py_time / pys_time if pys_time > 0 else 0
         token_reduction = (1 - pys_tokens / py_tokens) * 100
 
-        print(f"  📊 Comparison:")
+        print("  📊 Comparison:")
         print(f"     Speed: {speedup:.2f}x faster with PyShorthand")
         print(f"     Tokens: {token_reduction:.1f}% reduction")
-        print(f"     Quality: {'Similar' if abs(len(py_answer) - len(pys_answer)) < 100 else 'Different'}\n")
+        print(
+            f"     Quality: {'Similar' if abs(len(py_answer) - len(pys_answer)) < 100 else 'Different'}\n"
+        )
 
-        results.append({
-            "question": question,
-            "python": {"answer": py_answer, "time": py_time, "tokens": py_tokens},
-            "pyshorthand": {"answer": pys_answer, "time": pys_time, "tokens": pys_tokens},
-            "speedup": f"{speedup:.2f}x",
-            "token_reduction": f"{token_reduction:.1f}%"
-        })
+        results.append(
+            {
+                "question": question,
+                "python": {"answer": py_answer, "time": py_time, "tokens": py_tokens},
+                "pyshorthand": {"answer": pys_answer, "time": pys_time, "tokens": pys_tokens},
+                "speedup": f"{speedup:.2f}x",
+                "token_reduction": f"{token_reduction:.1f}%",
+            }
+        )
 
     # Save results
     with open("llm_demo_results.json", "w") as f:

@@ -10,11 +10,10 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple
 
 from openai import OpenAI
-from pyshort.decompiler.py2short import decompile_file
 
+from pyshort.decompiler.py2short import decompile_file
 
 # Load API key
 api_key = os.getenv("OPENROUTER_API_KEY")
@@ -69,7 +68,7 @@ EVALUATION_QUESTIONS = [
 ]
 
 
-def query_llm(prompt: str, code: str, model: str = "x-ai/grok-2-1212") -> Tuple[str, float, int]:
+def query_llm(prompt: str, code: str, model: str = "x-ai/grok-2-1212") -> tuple[str, float, int]:
     """Query the LLM with code and a question.
 
     Args:
@@ -80,12 +79,7 @@ def query_llm(prompt: str, code: str, model: str = "x-ai/grok-2-1212") -> Tuple[
     Returns:
         Tuple of (response, time_taken, tokens_used)
     """
-    messages = [
-        {
-            "role": "user",
-            "content": f"{prompt}\n\nCode:\n```\n{code}\n```"
-        }
-    ]
+    messages = [{"role": "user", "content": f"{prompt}\n\nCode:\n```\n{code}\n```"}]
 
     start = time.time()
     response = client.chat.completions.create(
@@ -101,7 +95,7 @@ def query_llm(prompt: str, code: str, model: str = "x-ai/grok-2-1212") -> Tuple[
     return answer, elapsed, tokens
 
 
-def evaluate_file(python_file: Path, questions: List[Dict]) -> Dict:
+def evaluate_file(python_file: Path, questions: list[dict]) -> dict:
     """Evaluate comprehension for both Python and PyShorthand versions.
 
     Args:
@@ -120,7 +114,7 @@ def evaluate_file(python_file: Path, questions: List[Dict]) -> Dict:
         python_code = f.read()
 
     # Generate PyShorthand
-    pys_file = python_file.with_suffix('.pys')
+    pys_file = python_file.with_suffix(".pys")
     pyshorthand_code = decompile_file(str(python_file), str(pys_file))
 
     # Calculate token counts (rough estimate: 1 token ≈ 4 chars)
@@ -137,7 +131,7 @@ def evaluate_file(python_file: Path, questions: List[Dict]) -> Dict:
         "python_size": len(python_code),
         "pys_size": len(pyshorthand_code),
         "compression": f"{compression:.1%}",
-        "questions": []
+        "questions": [],
     }
 
     # Ask each question for both versions
@@ -170,20 +164,22 @@ def evaluate_file(python_file: Path, questions: List[Dict]) -> Dict:
                 "tokens": pys_tokens,
             },
             "speedup": f"{speedup:.2f}x",
-            "token_reduction": f"{(1 - pys_tokens/py_tokens)*100:.1f}%"
+            "token_reduction": f"{(1 - pys_tokens/py_tokens)*100:.1f}%",
         }
 
         results["questions"].append(q_result)
 
         print(f"  ✓ Python: {py_time:.2f}s, {py_tokens} tokens")
         print(f"  ✓ PyShorthand: {pys_time:.2f}s, {pys_tokens} tokens")
-        print(f"  → Speedup: {speedup:.2f}x, Token reduction: {(1 - pys_tokens/py_tokens)*100:.1f}%")
+        print(
+            f"  → Speedup: {speedup:.2f}x, Token reduction: {(1 - pys_tokens/py_tokens)*100:.1f}%"
+        )
         print()
 
     return results
 
 
-def compare_answers(results: Dict) -> Dict:
+def compare_answers(results: dict) -> dict:
     """Analyze answer quality comparison.
 
     Args:
@@ -195,7 +191,7 @@ def compare_answers(results: Dict) -> Dict:
     analysis = {
         "file": results["file"],
         "compression": results["compression"],
-        "question_analysis": []
+        "question_analysis": [],
     }
 
     for q in results["questions"]:
@@ -245,6 +241,7 @@ def main():
         except Exception as e:
             print(f"❌ Error evaluating {test_file}: {e}")
             import traceback
+
             traceback.print_exc()
 
     # Save results
@@ -269,7 +266,9 @@ def main():
 
         total_py_tokens = sum(q["python"]["tokens"] for q in result["questions"])
         total_pys_tokens = sum(q["pyshorthand"]["tokens"] for q in result["questions"])
-        token_reduction = (1 - total_pys_tokens / total_py_tokens) * 100 if total_py_tokens > 0 else 0
+        token_reduction = (
+            (1 - total_pys_tokens / total_py_tokens) * 100 if total_py_tokens > 0 else 0
+        )
 
         print(f"  Avg speedup: {avg_speedup:.2f}x")
         print(f"  Token reduction: {token_reduction:.1f}%")

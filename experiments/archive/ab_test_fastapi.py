@@ -4,13 +4,14 @@ Role: API
 This module provides RESTful endpoints for user management.
 """
 
-from typing import List, Optional
 from functools import lru_cache
+
 from pydantic import BaseModel
 
 
 class User(BaseModel):
     """User model."""
+
     id: int
     name: str
     email: str
@@ -33,10 +34,10 @@ class UserAPI:
     @staticmethod
     def validate_email(email: str) -> bool:
         """Validate email format. O(1)"""
-        return '@' in email and '.' in email
+        return "@" in email and "." in email
 
     @lru_cache(maxsize=100)
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> User | None:
         """Get user by email with caching. O(N)"""
         for user in self.users.values():
             if user.email == email:
@@ -46,7 +47,8 @@ class UserAPI:
 
 # Module-level API functions
 
-def get_user(user_id: int) -> Optional[User]:
+
+def get_user(user_id: int) -> User | None:
     """Get user by ID.
 
     Time: O(1)
@@ -64,7 +66,9 @@ def create_user(name: str, email: str) -> User:
     return user
 
 
-def update_user(user_id: int, name: Optional[str] = None, email: Optional[str] = None) -> Optional[User]:
+def update_user(
+    user_id: int, name: str | None = None, email: str | None = None
+) -> User | None:
     """Update user information. O(1)"""
     user = users_db.get(user_id)
     if user is None:
@@ -86,7 +90,7 @@ def delete_user(user_id: int) -> bool:
     return False
 
 
-def search_users(query: str) -> List[User]:
+def search_users(query: str) -> list[User]:
     """Search users by name or email.
 
     Runtime: O(N)
@@ -104,6 +108,7 @@ def search_users(query: str) -> List[User]:
 # Global state
 users_db = {}
 _next_id = 1
+
 
 def next_id() -> int:
     """Generate next user ID."""

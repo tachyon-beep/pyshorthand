@@ -1,16 +1,16 @@
 """Core tools for PyShorthand ecosystem progressive disclosure."""
 
 import ast
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass
+from pathlib import Path
 
 # Import context pack and execution flow analyzers
 try:
-    from ..analyzer.context_pack import ContextPackGenerator, ContextPack
-    from ..analyzer.execution_flow import ExecutionFlowTracer, ExecutionFlow
-    from ..decompiler.py2short import PyShorthandGenerator
+    from ..analyzer.context_pack import ContextPack, ContextPackGenerator
+    from ..analyzer.execution_flow import ExecutionFlow, ExecutionFlowTracer
     from ..core.parser import parse_string as parse_pyshorthand
+    from ..decompiler.py2short import PyShorthandGenerator
+
     _ADVANCED_TOOLS_AVAILABLE = True
 except ImportError:
     _ADVANCED_TOOLS_AVAILABLE = False
@@ -27,7 +27,7 @@ class MethodImplementation:
     source_code: str
     line_start: int
     line_end: int
-    dependencies: List[str]  # Other methods called within this method
+    dependencies: list[str]  # Other methods called within this method
 
 
 @dataclass
@@ -35,10 +35,10 @@ class ClassDetails:
     """Detailed class information."""
 
     name: str
-    base_classes: List[str]
-    attributes: Dict[str, str]  # name -> type annotation
-    methods: Dict[str, str]  # name -> signature
-    nested_structures: Dict[str, str]  # For ModuleDict, etc.
+    base_classes: list[str]
+    attributes: dict[str, str]  # name -> type annotation
+    methods: dict[str, str]  # name -> signature
+    nested_structures: dict[str, str]  # For ModuleDict, etc.
 
 
 class CodebaseExplorer:
@@ -56,12 +56,10 @@ class CodebaseExplorer:
             codebase_path: Path to the Python file or directory to explore
         """
         self.codebase_path = Path(codebase_path)
-        self.cache: Dict[str, str] = {}
-        self._ast_cache: Dict[Path, ast.Module] = {}
+        self.cache: dict[str, str] = {}
+        self._ast_cache: dict[Path, ast.Module] = {}
 
-    def get_implementation(
-        self, target: str, include_context: bool = True
-    ) -> Optional[str]:
+    def get_implementation(self, target: str, include_context: bool = True) -> str | None:
         """Retrieve full Python implementation of a specific method.
 
         Args:
@@ -112,7 +110,7 @@ class CodebaseExplorer:
         class_name: str,
         include_methods: bool = False,
         expand_nested: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Retrieve detailed type information for a class.
 
         Args:
@@ -176,9 +174,7 @@ class CodebaseExplorer:
 
                 # Optionally include full implementation
                 if include_methods:
-                    impl = self._extract_method_implementation(
-                        class_name, method_name
-                    )
+                    impl = self._extract_method_implementation(class_name, method_name)
                     if impl:
                         # Indent implementation
                         for line in impl.source_code.split("\n"):
@@ -188,7 +184,7 @@ class CodebaseExplorer:
         self.cache[cache_key] = result
         return result
 
-    def search_usage(self, symbol: str) -> List[str]:
+    def search_usage(self, symbol: str) -> list[str]:
         """Find where a class/method is used in the codebase.
 
         Args:
@@ -223,13 +219,9 @@ class CodebaseExplorer:
                             if self._contains_symbol(item.value, symbol):
                                 for target in item.targets:
                                     if isinstance(target, ast.Attribute):
-                                        usages.append(
-                                            f"{node.name}.{target.attr} (state variable)"
-                                        )
+                                        usages.append(f"{node.name}.{target.attr} (state variable)")
                                     elif isinstance(target, ast.Name):
-                                        usages.append(
-                                            f"{node.name}.{target.id} (state variable)"
-                                        )
+                                        usages.append(f"{node.name}.{target.id} (state variable)")
 
                 # Check method calls
                 if isinstance(node, ast.Call):
@@ -243,7 +235,7 @@ class CodebaseExplorer:
 
     def get_context_pack(
         self, target: str, max_depth: int = 2, include_peers: bool = True
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Get dependency context pack with F0/F1/F2 layers and neighbors.
 
         This returns a dependency-aware context pack showing:
@@ -279,9 +271,7 @@ class CodebaseExplorer:
 
         # Generate context pack
         generator = ContextPackGenerator()
-        pack = generator.generate_context_pack(
-            pyshorthand_module, target, max_depth, include_peers
-        )
+        pack = generator.generate_context_pack(pyshorthand_module, target, max_depth, include_peers)
 
         if pack:
             return pack.to_dict()
@@ -289,7 +279,7 @@ class CodebaseExplorer:
 
     def trace_execution(
         self, entry_point: str, max_depth: int = 10, follow_calls: bool = True
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Trace execution flow through function calls.
 
         Shows the runtime call path, variables in scope, and call graph.
@@ -322,15 +312,13 @@ class CodebaseExplorer:
 
         # Trace execution
         tracer = ExecutionFlowTracer()
-        flow = tracer.trace_execution(
-            pyshorthand_module, entry_point, max_depth, follow_calls
-        )
+        flow = tracer.trace_execution(pyshorthand_module, entry_point, max_depth, follow_calls)
 
         if flow:
             return flow.to_dict()
         return None
 
-    def get_neighbors(self, symbol: str) -> Optional[Dict[str, List[str]]]:
+    def get_neighbors(self, symbol: str) -> dict[str, list[str]] | None:
         """Get direct neighbors (callers + callees) of an entity.
 
         This is a simplified version of get_context_pack that only returns
@@ -360,7 +348,7 @@ class CodebaseExplorer:
             "peers": pack_data.get("class_peers", []),
         }
 
-    def get_module_pyshorthand(self) -> Optional[str]:
+    def get_module_pyshorthand(self) -> str | None:
         """Get entire module in PyShorthand format.
 
         Returns the full PyShorthand representation of the entire codebase,
@@ -403,7 +391,7 @@ class CodebaseExplorer:
             return "\n\n".join(all_pyshorthand)
         return None
 
-    def get_class_pyshorthand(self, class_name: str) -> Optional[str]:
+    def get_class_pyshorthand(self, class_name: str) -> str | None:
         """Get a single class in PyShorthand format.
 
         Returns just the PyShorthand representation of one class,
@@ -455,7 +443,8 @@ class CodebaseExplorer:
                         # Extract just the class section
                         # Look for [C:ClassName] pattern
                         import re
-                        class_pattern = rf'\[C:{class_name}\].*?(?=\n\[C:|$)'
+
+                        class_pattern = rf"\[C:{class_name}\].*?(?=\n\[C:|$)"
                         match = re.search(class_pattern, full_pyshorthand, re.DOTALL)
 
                         if match:
@@ -484,13 +473,13 @@ class CodebaseExplorer:
 
     # Private methods
 
-    def _get_python_files(self) -> List[Path]:
+    def _get_python_files(self) -> list[Path]:
         """Get all Python files in codebase path."""
         if self.codebase_path.is_file():
             return [self.codebase_path]
         return list(self.codebase_path.rglob("*.py"))
 
-    def _get_ast(self, file_path: Path) -> Optional[ast.Module]:
+    def _get_ast(self, file_path: Path) -> ast.Module | None:
         """Get AST for a Python file (with caching)."""
         if file_path in self._ast_cache:
             return self._ast_cache[file_path]
@@ -505,7 +494,7 @@ class CodebaseExplorer:
 
     def _extract_method_implementation(
         self, class_name: str, method_name: str
-    ) -> Optional[MethodImplementation]:
+    ) -> MethodImplementation | None:
         """Extract source code for a specific method."""
         for file_path in self._get_python_files():
             tree = self._get_ast(file_path)
@@ -517,13 +506,12 @@ class CodebaseExplorer:
                 if isinstance(node, ast.ClassDef) and node.name == class_name:
                     # Find the method
                     for item in node.body:
-                        if isinstance(
-                            item, (ast.FunctionDef, ast.AsyncFunctionDef)
-                        ) and item.name == method_name:
+                        if (
+                            isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                            and item.name == method_name
+                        ):
                             # Extract source code
-                            source = ast.get_source_segment(
-                                open(file_path).read(), item
-                            )
+                            source = ast.get_source_segment(open(file_path).read(), item)
                             if source is None:
                                 continue
 
@@ -543,7 +531,7 @@ class CodebaseExplorer:
 
     def _extract_class_details(
         self, class_name: str, expand_nested: bool
-    ) -> Optional[ClassDetails]:
+    ) -> ClassDetails | None:
         """Extract detailed information about a class."""
         for file_path in self._get_python_files():
             tree = self._get_ast(file_path)
@@ -563,10 +551,7 @@ class CodebaseExplorer:
                     init_method = None
 
                     for item in node.body:
-                        if (
-                            isinstance(item, ast.FunctionDef)
-                            and item.name == "__init__"
-                        ):
+                        if isinstance(item, ast.FunctionDef) and item.name == "__init__":
                             init_method = item
                             break
 
@@ -575,26 +560,21 @@ class CodebaseExplorer:
                             if isinstance(stmt, ast.Assign):
                                 for target in stmt.targets:
                                     if isinstance(target, ast.Attribute):
-                                        if isinstance(
-                                            target.value, ast.Name
-                                        ) and target.value.id == "self":
+                                        if (
+                                            isinstance(target.value, ast.Name)
+                                            and target.value.id == "self"
+                                        ):
                                             attr_name = target.attr
                                             # Try to infer type
-                                            attr_type = self._infer_type(
-                                                stmt.value
-                                            )
+                                            attr_type = self._infer_type(stmt.value)
                                             attributes[attr_name] = attr_type
 
                                             # Check if it's a nested structure
-                                            if expand_nested and isinstance(
-                                                stmt.value, ast.Call
-                                            ):
-                                                if self._is_nested_structure(
-                                                    stmt.value
-                                                ):
-                                                    nested_structures[
-                                                        attr_name
-                                                    ] = ast.unparse(stmt.value)
+                                            if expand_nested and isinstance(stmt.value, ast.Call):
+                                                if self._is_nested_structure(stmt.value):
+                                                    nested_structures[attr_name] = ast.unparse(
+                                                        stmt.value
+                                                    )
 
                     # Extract method signatures
                     methods = {}
@@ -633,7 +613,7 @@ class CodebaseExplorer:
             for pattern in ["ModuleDict", "ModuleList", "Sequential", "ParameterDict"]
         )
 
-    def _parse_nested_structure(self, source: str) -> Dict[str, str]:
+    def _parse_nested_structure(self, source: str) -> dict[str, str]:
         """Parse nested structure from source code."""
         # Simple implementation - could be enhanced
         try:
@@ -678,7 +658,7 @@ class CodebaseExplorer:
 
         return f"def {func_node.name}({args_str}){returns}"
 
-    def _find_method_calls(self, func_node: ast.FunctionDef) -> List[str]:
+    def _find_method_calls(self, func_node: ast.FunctionDef) -> list[str]:
         """Find all method calls within a function."""
         calls = set()
         for node in ast.walk(func_node):
@@ -700,9 +680,7 @@ class CodebaseExplorer:
         func_name = ast.unparse(call_node.func)
         return class_name in func_name
 
-    def _find_parent_context(
-        self, tree: ast.Module, target_node: ast.AST
-    ) -> Optional[str]:
+    def _find_parent_context(self, tree: ast.Module, target_node: ast.AST) -> str | None:
         """Find the class.method context containing a node."""
         # Walk tree to find parent
         # This is simplified - would need proper parent tracking

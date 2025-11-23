@@ -12,11 +12,10 @@ Perfect for LLM context, code review, documentation, and refactoring.
 """
 
 import re
-from typing import Dict, List, Set, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from collections import deque
 
-from ..core.ast_nodes import Module, Entity, Class, Data, Function
+from ..core.ast_nodes import Class, Data, Entity, Function, Module
 
 
 @dataclass
@@ -24,22 +23,22 @@ class ContextPack:
     """A context pack containing an entity and its dependency layers."""
 
     target: str  # The target entity name
-    target_entity: Optional[Entity] = None  # The actual entity object
+    target_entity: Entity | None = None  # The actual entity object
 
     # Dependency layers
-    f0_core: Set[str] = field(default_factory=set)  # Target itself
-    f1_immediate: Set[str] = field(default_factory=set)  # Direct dependencies
-    f2_extended: Set[str] = field(default_factory=set)  # 2-hop dependencies
+    f0_core: set[str] = field(default_factory=set)  # Target itself
+    f1_immediate: set[str] = field(default_factory=set)  # Direct dependencies
+    f2_extended: set[str] = field(default_factory=set)  # 2-hop dependencies
 
     # Related entities
-    class_peers: Set[str] = field(default_factory=set)  # Other methods in same class
-    related_globals: Set[str] = field(default_factory=set)  # Global variables referenced
-    related_state: Set[str] = field(default_factory=set)  # State variables in class
+    class_peers: set[str] = field(default_factory=set)  # Other methods in same class
+    related_globals: set[str] = field(default_factory=set)  # Global variables referenced
+    related_state: set[str] = field(default_factory=set)  # State variables in class
 
     # Entity objects for serialization
-    entities: Dict[str, Entity] = field(default_factory=dict)  # All entities in pack
+    entities: dict[str, Entity] = field(default_factory=dict)  # All entities in pack
 
-    def all_entities(self) -> Set[str]:
+    def all_entities(self) -> set[str]:
         """Get all entity names in the context pack."""
         return self.f0_core | self.f1_immediate | self.f2_extended | self.class_peers
 
@@ -53,7 +52,7 @@ class ContextPack:
             return 2
         return -1
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
             "target": self.target,
@@ -130,7 +129,9 @@ class ContextPack:
         lines.append("    classDef f0 fill:#ff6b6b,stroke:#c92a2a,color:#fff,stroke-width:3px")
         lines.append("    classDef f1 fill:#51cf66,stroke:#2f9e44,color:#000,stroke-width:2px")
         lines.append("    classDef f2 fill:#74c0fc,stroke:#1971c2,color:#000,stroke-width:1px")
-        lines.append("    classDef peer fill:#ffd43b,stroke:#f08c00,color:#000,stroke-width:1px,stroke-dasharray: 5 5")
+        lines.append(
+            "    classDef peer fill:#ffd43b,stroke:#f08c00,color:#000,stroke-width:1px,stroke-dasharray: 5 5"
+        )
 
         return "\n".join(lines)
 
@@ -165,7 +166,9 @@ class ContextPack:
 
         for node in sorted(all_nodes):
             if node in self.f0_core:
-                lines.append(f'    {node} [style=filled, fillcolor="#ff6b6b", fontcolor=white, penwidth=3];')
+                lines.append(
+                    f'    {node} [style=filled, fillcolor="#ff6b6b", fontcolor=white, penwidth=3];'
+                )
             elif node in self.f1_immediate:
                 lines.append(f'    {node} [style=filled, fillcolor="#51cf66", penwidth=2];')
             elif node in self.f2_extended:
@@ -213,7 +216,7 @@ class ContextPack:
         matching_names = set()
 
         for name, entity in self.entities.items():
-            if hasattr(entity, 'tags') and entity.tags:
+            if hasattr(entity, "tags") and entity.tags:
                 for tag in entity.tags:
                     tag_str = str(tag)
                     if tag_pattern in tag_str or re.search(tag_pattern, tag_str):
@@ -251,7 +254,7 @@ class ContextPack:
         matching_names = set()
 
         for name, entity in self.entities.items():
-            if hasattr(entity, 'tags') and entity.tags:
+            if hasattr(entity, "tags") and entity.tags:
                 for tag in entity.tags:
                     tag_str = str(tag)
                     # Match complexity in tag (e.g., "O(N^2)", "Lin:O(N)")
@@ -290,7 +293,7 @@ class ContextPack:
 
         for name, entity in self.entities.items():
             # Check if entity has state variables with location specs
-            if isinstance(entity, Class) and hasattr(entity, 'state'):
+            if isinstance(entity, Class) and hasattr(entity, "state"):
                 for state_var in entity.state:
                     if state_var.type_spec and state_var.type_spec.location == location:
                         filtered_entities[name] = entity
@@ -326,8 +329,7 @@ class ContextPack:
         matching_names = {name for name in self.all_entities() if regex.search(name)}
 
         filtered_entities = {
-            name: entity for name, entity in self.entities.items()
-            if name in matching_names
+            name: entity for name, entity in self.entities.items() if name in matching_names
         }
 
         return ContextPack(
@@ -380,7 +382,7 @@ class ContextPack:
             entities=filtered_entities,
         )
 
-    def get_by_layer(self, layer: int) -> Set[str]:
+    def get_by_layer(self, layer: int) -> set[str]:
         """Get all entities at a specific dependency layer.
 
         Args:
@@ -407,10 +409,10 @@ class ContextPackGenerator:
     """Generates context packs for PyShorthand entities."""
 
     def __init__(self):
-        self.entity_map: Dict[str, Entity] = {}
-        self.dependency_graph: Dict[str, Set[str]] = {}  # Who depends on whom (forward)
-        self.reverse_graph: Dict[str, Set[str]] = {}  # Who is depended on by whom (backward)
-        self.class_map: Dict[str, str] = {}  # Method name -> Class name mapping
+        self.entity_map: dict[str, Entity] = {}
+        self.dependency_graph: dict[str, set[str]] = {}  # Who depends on whom (forward)
+        self.reverse_graph: dict[str, set[str]] = {}  # Who is depended on by whom (backward)
+        self.class_map: dict[str, str] = {}  # Method name -> Class name mapping
 
     def generate_context_pack(
         self,
@@ -418,7 +420,7 @@ class ContextPackGenerator:
         target_name: str,
         max_depth: int = 2,
         include_peers: bool = True,
-    ) -> Optional[ContextPack]:
+    ) -> ContextPack | None:
         """
         Generate a context pack for a target entity.
 
@@ -533,7 +535,7 @@ class ContextPackGenerator:
                     if dep in self.reverse_graph:
                         self.reverse_graph[dep].add(entity.name)
 
-    def _get_neighbors(self, entity_name: str) -> Set[str]:
+    def _get_neighbors(self, entity_name: str) -> set[str]:
         """Get all neighbors (callees + callers) of an entity."""
         neighbors = set()
 
@@ -547,7 +549,7 @@ class ContextPackGenerator:
 
         return neighbors
 
-    def _extract_class_dependencies(self, cls: Class) -> Set[str]:
+    def _extract_class_dependencies(self, cls: Class) -> set[str]:
         """Extract all dependencies from a class."""
         deps = set()
 
@@ -575,26 +577,26 @@ class ContextPackGenerator:
 
         return deps
 
-    def _extract_data_dependencies(self, data: Data) -> Set[str]:
+    def _extract_data_dependencies(self, data: Data) -> set[str]:
         """Extract all dependencies from a data structure."""
         deps = set()
 
-        for field in data.fields:
-            if field.type_spec:
-                type_ref = self._extract_type_reference(field.type_spec.base_type)
+        for data_field in data.fields:
+            if data_field.type_spec:
+                type_ref = self._extract_type_reference(data_field.type_spec.base_type)
                 if type_ref:
                     deps.add(type_ref)
 
                 # Handle union types
-                if field.type_spec.union_types:
-                    for union_type in field.type_spec.union_types:
+                if data_field.type_spec.union_types:
+                    for union_type in data_field.type_spec.union_types:
                         type_ref = self._extract_type_reference(union_type)
                         if type_ref:
                             deps.add(type_ref)
 
         return deps
 
-    def _extract_type_reference(self, type_str: str) -> Optional[str]:
+    def _extract_type_reference(self, type_str: str) -> str | None:
         """Extract entity name from type string."""
         if "Ref:" in type_str:
             parts = type_str.split("Ref:")
@@ -645,7 +647,7 @@ def generate_context_pack(
     target_name: str,
     max_depth: int = 2,
     include_peers: bool = True,
-) -> Optional[ContextPack]:
+) -> ContextPack | None:
     """
     Convenience function to generate a context pack.
 

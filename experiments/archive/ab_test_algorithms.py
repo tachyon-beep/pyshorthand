@@ -4,11 +4,10 @@ Role: Util
 Collection of fundamental algorithms with complexity annotations.
 """
 
-from typing import List, Optional, Callable
 from functools import lru_cache
 
 
-def binary_search(arr: List[int], target: int) -> int:
+def binary_search(arr: list[int], target: int) -> int:
     """Binary search in sorted array.
 
     Time: O(log N)
@@ -35,7 +34,7 @@ def binary_search(arr: List[int], target: int) -> int:
     return -1
 
 
-def quick_sort(arr: List[int]) -> List[int]:
+def quick_sort(arr: list[int]) -> list[int]:
     """Quick sort algorithm.
 
     Complexity: O(N log N) average, O(N²) worst case
@@ -57,7 +56,7 @@ def quick_sort(arr: List[int]) -> List[int]:
     return quick_sort(left) + middle + quick_sort(right)
 
 
-def merge_sort(arr: List[int]) -> List[int]:
+def merge_sort(arr: list[int]) -> list[int]:
     """Merge sort algorithm.
 
     Time: O(N log N)
@@ -78,7 +77,7 @@ def merge_sort(arr: List[int]) -> List[int]:
     return merge(left, right)
 
 
-def merge(left: List[int], right: List[int]) -> List[int]:
+def merge(left: list[int], right: list[int]) -> list[int]:
     """Merge two sorted arrays.
 
     Complexity: O(N)
@@ -107,7 +106,7 @@ def merge(left: List[int], right: List[int]) -> List[int]:
     return result
 
 
-def bubble_sort(arr: List[int]) -> List[int]:
+def bubble_sort(arr: list[int]) -> list[int]:
     """Bubble sort algorithm.
 
     Runtime: O(N²)
@@ -151,7 +150,7 @@ def fibonacci(n: int) -> int:
     return fibonacci(n - 1) + fibonacci(n - 2)
 
 
-def matrix_multiply(a: List[List[int]], b: List[List[int]]) -> List[List[int]]:
+def matrix_multiply(a: list[list[int]], b: list[list[int]]) -> list[list[int]]:
     """Multiply two matrices.
 
     Time: O(N³) for N×N matrices
@@ -174,7 +173,7 @@ def matrix_multiply(a: List[List[int]], b: List[List[int]]) -> List[List[int]]:
     return result
 
 
-def find_kth_largest(arr: List[int], k: int) -> int:
+def find_kth_largest(arr: list[int], k: int) -> int:
     """Find kth largest element using quickselect.
 
     Complexity: O(N) average, O(N²) worst case
@@ -186,6 +185,7 @@ def find_kth_largest(arr: List[int], k: int) -> int:
     Returns:
         kth largest element
     """
+
     def partition(left: int, right: int, pivot_index: int) -> int:
         pivot = arr[pivot_index]
         arr[pivot_index], arr[right] = arr[right], arr[pivot_index]
