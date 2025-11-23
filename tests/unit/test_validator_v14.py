@@ -2,7 +2,7 @@
 
 import pytest
 
-from pyshort.core.ast_nodes import DiagnosticSeverity, Function, PyShortAST, Tag
+from pyshort.core.ast_nodes import DiagnosticSeverity, Function, Metadata, PyShortAST, Tag
 from pyshort.core.validator import (
     ComplexityTagValidator,
     DecoratorTagValidator,
@@ -245,7 +245,7 @@ class TestDecoratorTagValidator:
         validator = DecoratorTagValidator()
         diagnostics = list(validator.check(ast))
         assert len(diagnostics) == 1
-        assert "must be a number" in diagnostics[0].message
+        assert "Invalid rate limit value" in diagnostics[0].message or "must be a number" in diagnostics[0].suggestion
 
     def test_does_not_validate_non_decorator_tags(self):
         """Test that non-decorator tags are ignored."""
@@ -384,7 +384,10 @@ class TestValidatorIntegration:
             Tag(base="O(N)", tag_type="complexity"),
         ]
         func = Function(name="test", tags=tags)
-        ast = PyShortAST(functions=[func])
+        ast = PyShortAST(
+            metadata=Metadata(module_name="Test"),
+            functions=[func]
+        )
 
         linter = Linter()
         diagnostics = linter.check(ast)

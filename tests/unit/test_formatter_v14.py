@@ -197,8 +197,10 @@ class TestFormatterV14UnicodeASCII:
 
     def test_format_unicode_preference(self):
         """Test formatting with Unicode preference."""
+        from pyshort.core.ast_nodes import TypeSpec
         func = Function(
             name="forward",
+            return_type=TypeSpec(base_type="Tensor"),
             tags=[Tag(base="NN", qualifiers=["∇"], tag_type="operation")],
         )
         ast = PyShortAST(metadata=Metadata(module_name="Test"), functions=[func])
@@ -210,8 +212,10 @@ class TestFormatterV14UnicodeASCII:
 
     def test_format_ascii_preference(self):
         """Test formatting with ASCII preference."""
+        from pyshort.core.ast_nodes import TypeSpec
         func = Function(
             name="forward",
+            return_type=TypeSpec(base_type="Tensor"),
             tags=[Tag(base="NN", qualifiers=["∇"], tag_type="operation")],
         )
         ast = PyShortAST(metadata=Metadata(module_name="Test"), functions=[func])
