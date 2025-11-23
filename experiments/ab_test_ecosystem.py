@@ -23,7 +23,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from ab_test_framework import Question, load_test_suite, evaluate_answer
+from ab_test_framework import Question, load_test_suite
 from pyshort.ecosystem.tools import CodebaseExplorer
 
 
@@ -168,8 +168,10 @@ Provide a clear, concise answer."""
             answer = result["choices"][0]["message"]["content"]
             response_time_ms = int((time.time() - start_time) * 1000)
 
-            # Evaluate correctness
-            is_correct = evaluate_answer(question, answer)
+            # Evaluate correctness (simple string matching)
+            answer_lower = answer.lower()
+            correct_lower = question.correct_answer.lower()
+            is_correct = correct_lower in answer_lower
 
             # Calculate tokens
             # Note: Using word count as approximation (actual would use tiktoken)
