@@ -36,7 +36,7 @@ Now the answer to Q4 is **clearly visible**: `nn.Module`
 ## ✅ What We Built
 
 ### 1. **Complete v1.5 Specification**
-📄 `PYSHORTHAND_SPEC_v1.5.md` (686 lines)
+📄 `PYSHORTHAND_SPEC_v0.9.0-RC1.md` (686 lines)
 
 - Inheritance: `[C:Foo] ◊ Bar, Baz`
 - Multiple inheritance: `[C:Foo] ◊ Bar, Baz, Mixin`

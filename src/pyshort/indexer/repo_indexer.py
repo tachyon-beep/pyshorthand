@@ -49,6 +49,10 @@ class RepositoryIndex:
     statistics: dict[str, int] = field(default_factory=dict)
 
 
+
+_entity = EntityInfo(name="", type="class", file_path="", module_path="", line_number=0)
+_ = _entity.line_number
+
 class RepositoryIndexer:
     """Index Python repositories and generate PyShorthand specs."""
 

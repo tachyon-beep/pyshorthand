@@ -27,7 +27,6 @@ class ExecutionStep:
 
     entity_name: str  # Function/method being executed
     depth: int  # Call depth (0 = entry point)
-    statement: Statement | None = None  # The statement being executed
     variables_in_scope: set[str] = field(default_factory=set)
     calls_made: list[str] = field(default_factory=list)  # Functions called from here
     state_accessed: set[str] = field(default_factory=set)  # State vars accessed

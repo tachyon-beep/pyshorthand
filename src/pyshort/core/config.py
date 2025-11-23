@@ -111,33 +111,6 @@ def load_config(config_path: Path | None = None) -> dict[str, Any]:
     return config
 
 
-def merge_config_with_args(config: dict[str, Any], args: Any, section: str) -> dict[str, Any]:
-    """
-    Merge config file settings with CLI arguments.
-
-    CLI arguments take precedence over config file.
-
-    Args:
-        config: Loaded configuration dict
-        args: Parsed argparse Namespace
-        section: Config section to merge ("format", "lint", etc.)
-
-    Returns:
-        Merged configuration dict
-    """
-    section_config = config.get(section, {})
-    merged = section_config.copy()
-
-    # Override with CLI args (only if explicitly provided)
-    args_dict = vars(args)
-    for key, value in args_dict.items():
-        # Skip None values (not explicitly set)
-        if value is not None:
-            merged[key] = value
-
-    return merged
-
-
 def create_default_config(path: Path) -> None:
     """
     Create a default .pyshortrc config file.

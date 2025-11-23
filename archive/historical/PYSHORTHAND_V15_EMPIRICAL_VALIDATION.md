@@ -174,7 +174,7 @@ This proves that **explicit structure notation helps LLMs** understand compresse
 
 ## 📁 Artifacts
 
-- **Specification**: `PYSHORTHAND_SPEC_v1.5.md`
+- **Specification**: `PYSHORTHAND_SPEC_v0.9.0-RC1.md`
 - **Implementation Summary**: `PYSHORTHAND_V15_COMPLETE.md`
 - **This Report**: `PYSHORTHAND_V15_EMPIRICAL_VALIDATION.md`
 - **Test Results**: `experiments/results/multimodel_*.json`

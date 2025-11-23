@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare PyShorthand v1.5 vs Original Python for Sonnet 4.5"""
+"""Compare PyShorthand 0.9.0-RC1 vs Original Python for Sonnet 4.5"""
 
 import json
 
@@ -35,7 +35,7 @@ orig_metrics = calc_metrics(orig)
 pyshort_metrics = calc_metrics(pyshort)
 
 print("=" * 80)
-print("SONNET 4.5: PyShorthand v1.5 vs Original Python")
+print("SONNET 4.5: PyShorthand 0.9.0-RC1 vs Original Python")
 print("=" * 80)
 
 print("\n📊 ACCURACY:")
@@ -43,7 +43,7 @@ print(
     f'   Original:         {orig_metrics["correct"]}/{orig_metrics["total"]} correct ({orig_metrics["accuracy"]:.0f}%)'
 )
 print(
-    f'   PyShorthand v1.5: {pyshort_metrics["correct"]}/{pyshort_metrics["total"]} correct ({pyshort_metrics["accuracy"]:.0f}%)'
+    f'   PyShorthand 0.9.0-RC1: {pyshort_metrics["correct"]}/{pyshort_metrics["total"]} correct ({pyshort_metrics["accuracy"]:.0f}%)'
 )
 print(
     f'   Difference:       {orig_metrics["accuracy"] - pyshort_metrics["accuracy"]:.1f}% (IDENTICAL!)'
@@ -51,20 +51,20 @@ print(
 
 print("\n⚡ SPEED:")
 print(f'   Original:         {orig_metrics["avg_time_ms"]:.0f}ms average')
-print(f'   PyShorthand v1.5: {pyshort_metrics["avg_time_ms"]:.0f}ms average')
+print(f'   PyShorthand 0.9.0-RC1: {pyshort_metrics["avg_time_ms"]:.0f}ms average')
 speedup = orig_metrics["avg_time_ms"] / pyshort_metrics["avg_time_ms"]
 print(f"   Speedup:          {speedup:.2f}x faster!")
 
 print("\n🪙 TOKENS (COST):")
 print(f'   Original prompt:  {orig_metrics["avg_prompt_tokens"]:.0f} tokens')
-print(f'   PyShorthand v1.5: {pyshort_metrics["avg_prompt_tokens"]:.0f} tokens')
+print(f'   PyShorthand 0.9.0-RC1: {pyshort_metrics["avg_prompt_tokens"]:.0f} tokens')
 token_reduction = (
     1 - pyshort_metrics["avg_prompt_tokens"] / orig_metrics["avg_prompt_tokens"]
 ) * 100
 print(f"   Reduction:        {token_reduction:.1f}%")
 
 print(f'\n   Original total:   {orig_metrics["avg_total_tokens"]:.0f} tokens/question')
-print(f'   PyShorthand v1.5: {pyshort_metrics["avg_total_tokens"]:.0f} tokens/question')
+print(f'   PyShorthand 0.9.0-RC1: {pyshort_metrics["avg_total_tokens"]:.0f} tokens/question')
 total_reduction = (1 - pyshort_metrics["avg_total_tokens"] / orig_metrics["avg_total_tokens"]) * 100
 print(f"   Reduction:        {total_reduction:.1f}%")
 
@@ -84,20 +84,20 @@ total_cost_py = input_cost_py + output_cost_py
 
 print("\n💰 COST (per question, Sonnet 4.5 pricing):")
 print(f"   Original:         ${total_cost_orig*1000:.4f}/question")
-print(f"   PyShorthand v1.5: ${total_cost_py*1000:.4f}/question")
+print(f"   PyShorthand 0.9.0-RC1: ${total_cost_py*1000:.4f}/question")
 cost_savings = (1 - total_cost_py / total_cost_orig) * 100
 print(f"   Savings:          {cost_savings:.1f}%")
 
 # Extrapolate to 1000 questions
 print("\n📈 AT SCALE (1000 questions):")
 print(f"   Original:         ${total_cost_orig*1000:.2f}")
-print(f"   PyShorthand v1.5: ${total_cost_py*1000:.2f}")
+print(f"   PyShorthand 0.9.0-RC1: ${total_cost_py*1000:.2f}")
 print(f"   You save:         ${(total_cost_orig - total_cost_py)*1000:.2f}")
 
 print("\n" + "=" * 80)
 print("SUMMARY")
 print("=" * 80)
-print("PyShorthand v1.5 delivers:")
+print("PyShorthand 0.9.0-RC1 delivers:")
 print(f'  ✅ SAME accuracy ({pyshort_metrics["accuracy"]:.0f}% vs {orig_metrics["accuracy"]:.0f}%)')
 print(f"  ⚡ {speedup:.1f}x faster responses")
 print(f"  🪙 {token_reduction:.0f}% fewer input tokens")

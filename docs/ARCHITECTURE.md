@@ -2,7 +2,7 @@
 
 ## Overview
 
-The PyShorthand toolchain is a suite of tools designed to parse, validate, analyze, and visualize the PyShorthand Protocol (v1.3.1) - a high-density intermediate representation for Python codebases optimized for LLM consumption.
+The PyShorthand toolchain is a suite of tools designed to parse, validate, analyze, and visualize the PyShorthand Protocol (0.9.0-RC1) - a high-density intermediate representation for Python codebases optimized for LLM consumption.
 
 ## Design Principles
 
@@ -17,7 +17,7 @@ The PyShorthand toolchain is a suite of tools designed to parse, validate, analy
 
 ```
 pyshorthand/
-├── pyproject.toml              # PEP 621 package metadata
+├── pyproject.toml              # PEP 621 package metadata (0.9.0-RC1)
 ├── README.md                   # User-facing documentation
 ├── ARCHITECTURE.md             # This file
 ├── src/
@@ -392,7 +392,7 @@ analyzer.register_pattern(TransformerComplexity())
 
 ## References
 
-- PyShorthand RFC v1.3.1
+- PyShorthand RFC 0.9.0-RC1
 - Python AST documentation
 - Rust's Chalk for inspiration on IR design
 - LLVM IR for precedent on intermediate representations

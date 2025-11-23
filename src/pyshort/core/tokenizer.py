@@ -37,7 +37,7 @@ class TokenType(Enum):
     ALIAS = auto()  # ≈, REF
     CLONE = auto()  # ≜, COPY
     FOR_ALL = auto()  # ∀, FOR
-    EXTENDS = auto()  # ◊, EXTENDS (v1.5: inheritance)
+    EXTENDS = auto()  # ◊, EXTENDS (0.9.0-RC1: inheritance)
 
     # Delimiters
     LPAREN = auto()  # (
@@ -315,9 +315,6 @@ class Tokenizer:
         self.advance()  # Second quote
         self.advance()  # Third quote
 
-        # Build the closing sequence we're looking for
-        closing = quote * 3
-
         # Read until we find the closing triple quotes
         while True:
             char = self.current_char()
@@ -476,7 +473,7 @@ class Tokenizer:
                 "≜": TokenType.CLONE,
                 "∀": TokenType.FOR_ALL,
                 "⏱": TokenType.PROFILING,
-                "◊": TokenType.EXTENDS,  # v1.5: Inheritance
+                "◊": TokenType.EXTENDS,  # 0.9.0-RC1: Inheritance
             }
 
             if char in unicode_map:
@@ -531,7 +528,7 @@ class Tokenizer:
                     "REF": TokenType.ALIAS,
                     "COPY": TokenType.CLONE,
                     "FOR": TokenType.FOR_ALL,
-                    "EXTENDS": TokenType.EXTENDS,  # v1.5: Inheritance (ASCII)
+                    "EXTENDS": TokenType.EXTENDS,  # 0.9.0-RC1: Inheritance (ASCII)
                 }
 
                 if identifier in keyword_map:

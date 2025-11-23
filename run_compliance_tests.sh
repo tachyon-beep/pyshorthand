@@ -4,7 +4,7 @@
 set -e
 
 echo "======================================================================"
-echo "PyShorthand RFC v1.3.1 Compliance Test Suite"
+echo "PyShorthand RFC 0.9.0-RC1 Compliance Test Suite"
 echo "======================================================================"
 echo ""
 

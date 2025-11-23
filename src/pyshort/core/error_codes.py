@@ -186,25 +186,6 @@ def list_error_codes(category: str | None = None) -> list:
     return sorted(codes, key=lambda x: x.code)
 
 
-def explain_error_code(code: str) -> str | None:
-    """Get detailed explanation for an error code."""
-    error_info = get_error_code(code)
-    if not error_info:
-        return None
-
-    explanation = [
-        f"Error Code: {error_info.code}",
-        f"Category: {error_info.category}",
-        f"Description: {error_info.description}",
-    ]
-
-    if error_info.explanation:
-        explanation.append("\nExplanation:")
-        explanation.append(f"  {error_info.explanation}")
-
-    return "\n".join(explanation)
-
-
 if __name__ == "__main__":
     # Test error code system
     print("PyShorthand Error Codes")

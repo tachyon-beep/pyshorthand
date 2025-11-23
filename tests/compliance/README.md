@@ -1,6 +1,6 @@
 # RFC Compliance Test Suite
 
-**Purpose**: Validates that the PyShorthand toolchain correctly implements the [PyShorthand Protocol RFC v1.3.1](../../docs/RFC.md) specification.
+**Purpose**: Validates that the PyShorthand toolchain correctly implements the [PyShorthand Protocol RFC 0.9.0-RC1](../../docs/RFC.md) specification.
 
 ## Overview
 
@@ -36,7 +36,7 @@ python3 -m unittest tests.compliance.test_rfc_compliance -v
 ### Expected Output
 ```
 ======================================================================
-RFC COMPLIANCE REPORT - PyShorthand v1.3.1
+RFC COMPLIANCE REPORT - PyShorthand 0.9.0-RC1
 ======================================================================
 ✓ PASS: RFC 2.1: Basic Metadata
          ✓ Metadata parsed correctly
@@ -177,5 +177,5 @@ When adding new RFC features:
 ---
 
 **Last Updated**: November 21, 2025
-**RFC Version**: v1.3.1
+**RFC Version**: 0.9.0-RC1
 **Test Count**: 6 tests covering core RFC features

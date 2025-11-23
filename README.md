@@ -1,12 +1,12 @@
 # PyShorthand: Progressive Disclosure for AI Code Understanding
 
-PyShorthand v1.5 + Ecosystem combines compressed notation with selective code access. In testing, the full 8-tool ecosystem achieved 100% accuracy (8/8 questions) with GPT-5.1, using intelligent multi-tool orchestration.
+PyShorthand 0.9.0-RC1 + Ecosystem combines compressed notation with selective code access. In testing, the full 8-tool ecosystem achieved 100% accuracy (8/8 questions) with GPT-5.1, using intelligent multi-tool orchestration.
 
 ```
 Approach              Accuracy   Avg Tokens   Tools Used
 ──────────────────────────────────────────────────────────
 Full Python Code:        35%      5,348       N/A
-PyShorthand v1.5:        35%        894       N/A (83% savings)
+PyShorthand 0.9.0-RC1:   35%        894       N/A (83% savings)
 Ecosystem (conservative):40%        267       1-2 (95% savings)
 Ecosystem (aggressive):  90%        398       2-3 (93% savings)
 Ecosystem (full tools):  100%     4,905       1-4
@@ -20,7 +20,7 @@ Ecosystem (full tools):  100%     4,905       1-4
 
 A high-density intermediate representation for Python codebases that combines:
 
-1. **Compressed Notation** (v1.5) - 83% token reduction with inheritance, generics, nested structures
+1. **Compressed Notation** (0.9.0-RC1) - 83% token reduction with inheritance, generics, nested structures
 2. **Progressive Disclosure Ecosystem** - On-demand access to implementation details when needed
 3. **Empirical Validation** - Tested with real LLMs (GPT-5.1, Claude Sonnet 4.5) on complex questions
 
@@ -37,7 +37,17 @@ Instead of choosing between "send everything" or "compress everything", the ecos
 
 ## Quick Start
 
-### Installation
+### Installation (uv recommended)
+
+```bash
+# Create .venv and install dev/cli/analysis extras
+uv sync --extra dev --extra cli --extra analysis
+source .venv/bin/activate
+
+# Add --extra viz after installing system Graphviz headers (graphviz, libgraphviz-dev)
+```
+
+If you prefer pip:
 
 ```bash
 pip install pyshorthand[all]
@@ -46,7 +56,7 @@ pip install pyshorthand[all]
 ### Basic Usage
 
 ```bash
-# Convert Python to PyShorthand v1.5
+# Convert Python to PyShorthand 0.9.0-RC1
 py2short model.py > model.pys
 
 # Use with ecosystem (production-ready)
@@ -56,7 +66,7 @@ python -m pyshorthand.ecosystem.server model.py
 ### Example: nanoGPT
 
 **Original Python:** 500 lines, 5,348 tokens
-**PyShorthand v1.5:** 120 lines, 894 tokens
+**PyShorthand 0.9.0-RC1:** 120 lines, 894 tokens
 
 ```pyshorthand
 [C:GPT] ◊ nn.Module
@@ -89,14 +99,14 @@ python -m pyshorthand.ecosystem.server model.py
 ### Test Setup
 - **Model:** GPT-5.1 with reasoning mode
 - **Dataset:** 10 complex multi-file questions (nanoGPT codebase)
-- **Comparison:** Full code vs PyShorthand v1.5 vs Ecosystem
+- **Comparison:** Full code vs PyShorthand 0.9.0-RC1 vs Ecosystem
 
 ### Results
 
 | Approach | Accuracy | Avg Tokens | Savings | Cost/1M Q |
 |----------|----------|------------|---------|-----------|
 | Full Code | 35% | 5,348 | - | $18,250 |
-| PyShorthand v1.5 | 35% | 894 | 83% | $3,930 |
+| PyShorthand 0.9.0-RC1 | 35% | 894 | 83% | $3,930 |
 | **Ecosystem (aggressive)** | **90%** | **398** | **93%** | **$1,750** |
 
 **Estimated savings: $16,500 per million questions while achieving 2.6x better accuracy.**
@@ -119,9 +129,9 @@ python -m pyshorthand.ecosystem.server model.py
 
 ---
 
-## PyShorthand v1.5 Features
+## PyShorthand 0.9.0-RC1 Features
 
-### What's New in v1.5
+### What's New in 0.9.0-RC1
 
 **Inheritance Notation:**
 ```pyshorthand
@@ -273,11 +283,11 @@ usages = explorer.search_usage("LayerNorm")
 
 ## Empirical Validation Details
 
-### Test 1: Inheritance Fix (v1.4 → v1.5)
+### Test 1: Inheritance Fix (prior → 0.9.0-RC1)
 
 **Problem:** Both Sonnet 3.5 and 4.5 failed: "Which PyTorch module does LayerNorm inherit from?"
 
-**Fix:** Added `◊ nn.Module` notation in v1.5
+**Fix:** Added `◊ nn.Module` notation in 0.9.0-RC1
 
 **Result:** ✅ Both models now pass! Sonnet 4.5 explicitly states: "This is indicated by the notation `[C:LayerNorm] ◊ nn.Module`, where the `◊` symbol denotes inheritance."
 
@@ -392,7 +402,7 @@ python experiments/diagnostic_test.py
 
 ## Documentation
 
-- **[Full Specification (v1.5)](PYSHORTHAND_SPEC_v1.5.md)** - Complete language reference
+- **[Full Specification (0.9.0-RC1)](PYSHORTHAND_SPEC_v0.9.0-RC1.md)** - Complete language reference
 - **[Ecosystem Tools](ECOSYSTEM_TOOLS.md)** - 8-tool reference documentation
 - **[Gold Standard Evidence](GOLD_STANDARD_EXAMPLE.md)** - Detailed test results with GPT-5.1
 - **[Roadmap](ROADMAP.md)** - Future development plans
@@ -405,7 +415,7 @@ See `test_repos/` for example codebases and `experiments/` for test scripts.
 
 ## Roadmap
 
-### v1.5 (Current) ✅
+### 0.9.0-RC1 (Current) ✅
 - [x] Inheritance notation (`◊`)
 - [x] Generic types (`<T>`)
 - [x] Nested structures (`{}`)
@@ -413,7 +423,7 @@ See `test_repos/` for example codebases and `experiments/` for test scripts.
 - [x] Ecosystem with 3 core tools
 - [x] Empirical validation (90% accuracy)
 
-### v1.6 (Planned)
+### Post-RC (Planned)
 - [ ] MCP server for Claude Desktop
 - [ ] Iterative refinement (multi-turn tool calling)
 - [ ] Smart caching (preload related methods)
@@ -481,4 +491,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-[Read the Spec →](PYSHORTHAND_SPEC_v1.5.md) | [See the Code →](src/) | [Ecosystem Tools →](ECOSYSTEM_TOOLS.md)
+[Read the Spec →](PYSHORTHAND_SPEC_v0.9.0-RC1.md) | [See the Code →](src/) | [Ecosystem Tools →](ECOSYSTEM_TOOLS.md)

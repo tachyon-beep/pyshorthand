@@ -52,7 +52,7 @@ def main() -> int:
     )
 
     # Version command
-    version_parser = subparsers.add_parser("version", help="Show version information")
+    subparsers.add_parser("version", help="Show version information")
 
     args = parser.parse_args()
 

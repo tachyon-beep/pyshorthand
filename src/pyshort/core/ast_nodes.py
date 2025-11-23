@@ -101,7 +101,7 @@ class Metadata:
 class TypeSpec:
     """Type specification with optional shape and location.
 
-    v1.5: Added generic_params for generic types like List<T>, Dict<K,V>
+    0.9.0-RC1: Added generic_params for generic types like List<T>, Dict<K,V>
     """
 
     base_type: str  # f32, i64, bool, obj, Map, Str, Any
@@ -109,8 +109,8 @@ class TypeSpec:
     location: str | None = None  # @CPU, @GPU, @Disk, @Net
     transfer: tuple[str, str] | None = None  # @CPU→GPU
     union_types: list[str] | None = None  # For Union types: [i32, str, f32]
-    generic_params: list[str] | None = None  # v1.5: For generics: List<T>, Dict<K, V>
-    nested_structure: dict[str, str] | None = None  # v1.5: For {} expansion
+    generic_params: list[str] | None = None  # 0.9.0-RC1: For generics: List<T>, Dict<K, V>
+    nested_structure: dict[str, str] | None = None  # 0.9.0-RC1: For {} expansion
 
     def __str__(self) -> str:
         """Format as PyShorthand notation."""
@@ -120,7 +120,7 @@ class TypeSpec:
         else:
             result = self.base_type
 
-        # Add generics (v1.5)
+        # Add generics (0.9.0-RC1)
         if self.generic_params:
             result += f"<{', '.join(self.generic_params)}>"
 
@@ -131,7 +131,7 @@ class TypeSpec:
         elif self.location:
             result += f"@{self.location}"
 
-        # Add nested structure (v1.5)
+        # Add nested structure (0.9.0-RC1)
         if self.nested_structure:
             result += " {"
             for key, val in self.nested_structure.items():
@@ -150,7 +150,7 @@ class TypeSpec:
 class Tag:
     """Computational tag with qualifiers.
 
-    Supports v1.4 tag types:
+    Supports legacy tag types:
     - operation: [Lin:MatMul], [Iter:Hot], [NN:∇]
     - complexity: [O(N)], [O(N*M)]
     - decorator: [Prop], [Static], [Cached]
@@ -282,10 +282,6 @@ class Identifier(Expression):
         return self.name
 
 
-@dataclass(frozen=True)
-class LiteralValue(Expression):
-    """Literal value (renamed from Literal to avoid clash with typing.Literal)."""
-
     value: int | float | str | bool
     type_hint: str | None = None
 
@@ -336,10 +332,6 @@ class FunctionCall(Expression):
         args_str = ", ".join(str(arg) for arg in self.args)
         return f"{self.function}({args_str})"
 
-
-@dataclass(frozen=True)
-class TensorOp(Expression):
-    """Tensor operation (matmul, broadcast, etc.)."""
 
     operation: str  # "matmul", "broadcast", "conv", etc.
     operands: list[Expression]
@@ -552,11 +544,6 @@ class Function:
         }
 
     @property
-    def is_async(self) -> bool:
-        """Check if function is async."""
-        return "Async" in self.modifiers
-
-    @property
     def complexity(self) -> str | None:
         """Get complexity annotation if present."""
         for tag in self.tags:
@@ -597,7 +584,7 @@ class Reference(Entity):
 class Class(Entity):
     """Class definition with state and methods.
 
-    v1.5 enhancements:
+    0.9.0-RC1 enhancements:
     - base_classes: Inheritance support (◊ notation)
     - generic_params: Generic type parameters (<T>)
     - is_abstract: Abstract class marker
@@ -610,7 +597,7 @@ class Class(Entity):
     dependencies: list[Reference] = field(default_factory=list)
     line: int = 0
     metadata: Metadata | None = None
-    # v1.5: Inheritance and generics
+    # 0.9.0-RC1: Inheritance and generics
     base_classes: list[str] = field(default_factory=list)  # [C:Foo] ◊ Bar, Baz
     generic_params: list[str] = field(default_factory=list)  # [C:List<T>]
     is_abstract: bool = False  # [C:Foo] [Abstract]
@@ -662,28 +649,8 @@ class Interface(Entity):
 
 
 @dataclass(frozen=True)
-class Protocol(Entity):
-    """Protocol definition (v1.5).
-
-    Represents typing.Protocol - structural subtyping interface.
-    """
-
-    name: str
-    methods: list[Function] = field(default_factory=list)
-    line: int = 0
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "type": "protocol",
-            "name": self.name,
-            "methods": [m.to_dict() for m in self.methods],
-            "line": self.line,
-        }
-
-
-@dataclass(frozen=True)
 class Enum(Entity):
-    """Enum definition (v1.5).
+    """Enum definition (0.9.0-RC1).
 
     Represents Python Enum with named constants.
     """
@@ -757,23 +724,3 @@ class PyShortAST:
     def has_warnings(self) -> bool:
         """Check if there are any warning-level diagnostics."""
         return any(d.severity == DiagnosticSeverity.WARNING for d in self.diagnostics)
-
-    @property
-    def mutations(self) -> list[Statement]:
-        """Get all mutation statements."""
-        return [s for s in self.statements if s.is_mutation]
-
-    @property
-    def system_mutations(self) -> list[Statement]:
-        """Get all system-level mutations."""
-        return [s for s in self.statements if s.is_system_mutation]
-
-    @property
-    def io_operations(self) -> list[Statement]:
-        """Get all I/O operations."""
-        return [s for s in self.statements if any(tag.is_io for tag in s.tags)]
-
-    @property
-    def sync_points(self) -> list[Statement]:
-        """Get all synchronization points."""
-        return [s for s in self.statements if any(tag.is_sync for tag in s.tags)]

@@ -360,7 +360,7 @@ def main():
     # Comparison
     print("Comparison to baselines:")
     print("  Full code: 35% accuracy, 5,348 tokens")
-    print("  PyShorthand v1.5: 35% accuracy, 894 tokens")
+    print("  PyShorthand 0.9.0-RC1: 35% accuracy, 894 tokens")
     print("  Ecosystem (keyword): 40% accuracy, 328 tokens")
     print(f"  Ecosystem (GPT-5.1): {accuracy:.0f}% accuracy, {avg_total:.0f} tokens")
     print()

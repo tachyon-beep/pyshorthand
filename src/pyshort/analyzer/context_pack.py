@@ -42,16 +42,6 @@ class ContextPack:
         """Get all entity names in the context pack."""
         return self.f0_core | self.f1_immediate | self.f2_extended | self.class_peers
 
-    def layer_count(self, entity_name: str) -> int:
-        """Get the layer depth of an entity (0 = core, 1 = immediate, 2 = extended)."""
-        if entity_name in self.f0_core:
-            return 0
-        elif entity_name in self.f1_immediate:
-            return 1
-        elif entity_name in self.f2_extended:
-            return 2
-        return -1
-
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
@@ -198,82 +188,6 @@ class ContextPack:
         lines.append("}")
 
         return "\n".join(lines)
-
-    def filter_by_tag(self, tag_pattern: str) -> "ContextPack":
-        """Filter context pack to only include entities with matching tags.
-
-        Args:
-            tag_pattern: Tag pattern to match (e.g., "Risk:High", "O(N^2)", "GPU")
-
-        Returns:
-            New ContextPack with only matching entities
-
-        Example:
-            high_risk = pack.filter_by_tag("Risk:High")
-            gpu_entities = pack.filter_by_tag("GPU")
-        """
-        filtered_entities = {}
-        matching_names = set()
-
-        for name, entity in self.entities.items():
-            if hasattr(entity, "tags") and entity.tags:
-                for tag in entity.tags:
-                    tag_str = str(tag)
-                    if tag_pattern in tag_str or re.search(tag_pattern, tag_str):
-                        filtered_entities[name] = entity
-                        matching_names.add(name)
-                        break
-
-        # Create filtered pack
-        return ContextPack(
-            target=self.target,
-            target_entity=self.target_entity,
-            f0_core=self.f0_core & matching_names,
-            f1_immediate=self.f1_immediate & matching_names,
-            f2_extended=self.f2_extended & matching_names,
-            class_peers=self.class_peers & matching_names,
-            related_globals=self.related_globals,
-            related_state=self.related_state,
-            entities=filtered_entities,
-        )
-
-    def filter_by_complexity(self, complexity_pattern: str) -> "ContextPack":
-        """Filter context pack to only include entities with matching complexity.
-
-        Args:
-            complexity_pattern: Complexity pattern (e.g., "O(N^2)", "O(N)", "O(1)")
-
-        Returns:
-            New ContextPack with only matching entities
-
-        Example:
-            quadratic = pack.filter_by_complexity("O(N^2)")
-            linear_or_worse = pack.filter_by_complexity("O(N.*)")
-        """
-        filtered_entities = {}
-        matching_names = set()
-
-        for name, entity in self.entities.items():
-            if hasattr(entity, "tags") and entity.tags:
-                for tag in entity.tags:
-                    tag_str = str(tag)
-                    # Match complexity in tag (e.g., "O(N^2)", "Lin:O(N)")
-                    if complexity_pattern in tag_str or re.search(complexity_pattern, tag_str):
-                        filtered_entities[name] = entity
-                        matching_names.add(name)
-                        break
-
-        return ContextPack(
-            target=self.target,
-            target_entity=self.target_entity,
-            f0_core=self.f0_core & matching_names,
-            f1_immediate=self.f1_immediate & matching_names,
-            f2_extended=self.f2_extended & matching_names,
-            class_peers=self.class_peers & matching_names,
-            related_globals=self.related_globals,
-            related_state=self.related_state,
-            entities=filtered_entities,
-        )
 
     def filter_by_location(self, location: str) -> "ContextPack":
         """Filter context pack to only include entities with specific memory location.

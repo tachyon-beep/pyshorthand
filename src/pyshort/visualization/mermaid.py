@@ -26,7 +26,6 @@ class MermaidConfig:
     show_state_vars: bool = True
     show_methods: bool = True
     show_dependencies: bool = True
-    show_transfers: bool = True
     color_by_risk: bool = True
     include_metadata: bool = True
     max_label_length: int = 30
@@ -37,7 +36,6 @@ class MermaidGenerator:
 
     def __init__(self, config: MermaidConfig | None = None):
         self.config = config or MermaidConfig()
-        self.node_counter = 0
         self.node_ids: dict[str, str] = {}
 
     def generate(self, ast: PyShortAST) -> str:
@@ -265,21 +263,3 @@ def generate_mermaid(
     config = MermaidConfig(diagram_type=diagram_type, direction=direction, **kwargs)
     generator = MermaidGenerator(config)
     return generator.generate(ast)
-
-
-def save_mermaid(
-    ast: PyShortAST, output_path: str, diagram_type: str = "flowchart", **kwargs
-) -> None:
-    """
-    Generate and save Mermaid diagram to file.
-
-    Args:
-        ast: PyShorthand AST to visualize
-        output_path: Path to save .mmd file
-        diagram_type: "flowchart", "classDiagram", or "graph"
-        **kwargs: Additional config options
-    """
-    diagram = generate_mermaid(ast, diagram_type=diagram_type, **kwargs)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(diagram)

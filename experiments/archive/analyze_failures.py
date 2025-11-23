@@ -24,7 +24,7 @@ print("=" * 80)
 print("SONNET 4.5: WHY ONLY 7/20? (35% accuracy)")
 print("=" * 80)
 
-print("\n📊 BREAKDOWN BY DIFFICULTY (PyShorthand v1.5):")
+print("\n📊 BREAKDOWN BY DIFFICULTY (PyShorthand 0.9.0-RC1):")
 difficulty_stats = {}
 for q in questions:
     diff = q.difficulty
@@ -97,7 +97,7 @@ print("=" * 80)
 
 print(
     """
-PyShorthand v1.5 is a STRUCTURE NOTATION, not a code implementation!
+PyShorthand 0.9.0-RC1 is a STRUCTURE NOTATION, not a code implementation!
 
 What it HAS:
   ✅ Class hierarchy (◊ nn.Module)
@@ -135,7 +135,7 @@ print("✅ VERDICT: 35% is EXPECTED and CORRECT!")
 print("=" * 80)
 print(
     """
-PyShorthand v1.5 is designed for ARCHITECTURAL understanding, not implementation.
+PyShorthand 0.9.0-RC1 is designed for ARCHITECTURAL understanding, not implementation.
 
 The 7/20 (35%) represents questions answerable from STRUCTURE alone.
 This is actually a SUCCESS - we answer ALL structural questions (5/5)!

@@ -1,21 +1,29 @@
-# PyShorthand Protocol Specification v1.5
+# PyShorthand Protocol Specification 0.9.0-rc1
 
-**Status**: Draft
-**Date**: November 23, 2025
-**Changes from v1.4**:
-- **Added inheritance notation** (Section 2.2.1) - `◊` symbol
-- **Added nested structure expansion** (Section 2.3.1) - `{}` syntax
-- **Added generic type parameters** (Section 2.4) - `<T>` syntax
-- **Added abstract markers** (Section 3.4.4) - `[Abstract]` tag
-- **Enhanced class declarations** with base class support
+**Status**: Draft (Release Candidate)
+**Date**: 23 November 2025
+
+**Language Version**: PyShorthand 0.9.0-rc1  
+**Spec Identifier**: 001-PYSHORTHAND  
+
+**Internal history**:
+- This document supersedes internal drafts informally referred to as “v1.3”, “v1.4”, and “v1.5”.
+- Those drafts are folded into the 0.9.0 line and will not be published separately.
+
+**Changes since 0.8.x internal drafts**:
+- Added inheritance notation (Section 2.2.1) – `◊` symbol
+- Added nested structure expansion (Section 2.3.1) – `{}` syntax
+- Added generic type parameters (Section 2.4) – `<T>` syntax
+- Added abstract / protocol markers (Section 3.4.4) – `[Abstract]`, `[Protocol]`
+- Enhanced class declarations with base class support and generic-aware state types
 
 ---
 
 ## 1. Overview
 
-PyShorthand is a high-density intermediate representation for Python code optimized for LLM comprehension. Version 1.5 extends v1.4 with inheritance notation, generic types, and nested structure expansion based on empirical validation testing.
+PyShorthand is a high-density intermediate representation for Python code optimized for LLM comprehension. Release 0.9.0-RC1 extends the previous baseline with inheritance notation, generic types, and nested structure expansion based on empirical validation testing.
 
-### 1.1 Design Goals for v1.5
+### 1.1 Design Goals for 0.9.0-RC1
 
 1. **Preserve Inheritance Information** - Empirical tests showed LLMs need explicit inheritance (Q4 failures in Sonnet 3.5/4.5 tests)
 2. **Expand Nested Structures** - Make complex compositions clearer (ModuleDict, nested objects)
@@ -24,7 +32,7 @@ PyShorthand is a high-density intermediate representation for Python code optimi
 
 ---
 
-## 2. Core Syntax (Enhanced from v1.4)
+## 2. Core Syntax (Enhanced from prior releases)
 
 ### 2.1 Metadata Headers (Unchanged)
 ```
@@ -81,12 +89,12 @@ The `◊` symbol indicates inheritance/extension. Multiple bases are comma-separ
 
 **Syntax**: Use `{}` to expand composite structures inline
 
-**Simple Form** (v1.4):
+**Simple Form** (prior format):
 ```
 transformer ∈ ModuleDict
 ```
 
-**Expanded Form** (v1.5):
+**Expanded Form** (0.9.0-RC1):
 ```
 transformer ∈ ModuleDict {
   wte: Embedding
@@ -246,11 +254,11 @@ cache ∈ LRUCache<str, Tensor[N]@GPU> {
 
 ---
 
-## 3. Enhanced Features (v1.4 + v1.5)
+## 3. Enhanced Features (prior releases + 0.9.0-RC1)
 
 ### 3.1 Function Signatures with Tags
 
-**Syntax** (unchanged from v1.4):
+**Syntax** (unchanged from prior releases):
 ```
 F:function_name(params) → ReturnType [Tags]
 ```
@@ -278,7 +286,7 @@ F:batch_process<T, U>(
 
 ---
 
-### 3.2 Complexity Tags (Unchanged from v1.4)
+### 3.2 Complexity Tags (Unchanged from prior releases)
 
 **Standard Forms**:
 - `O(1)` - Constant time
@@ -288,11 +296,11 @@ F:batch_process<T, U>(
 - `O(N*M)` - Multi-variable
 - `O(2^N)` - Exponential
 
-See v1.4 spec for complete details.
+See prior specs for complete details.
 
 ---
 
-### 3.3 Operation Tags (Unchanged from v1.4)
+### 3.3 Operation Tags (Unchanged from prior releases)
 
 **Base Types**:
 - `Lin` - Linear/algebraic operations
@@ -301,26 +309,26 @@ See v1.4 spec for complete details.
 - `IO` - Input/Output
 - `Sync` - Concurrency
 
-See v1.4 spec for complete details.
+See prior specs for complete details.
 
 ---
 
 ### 3.4 Decorator Tags
 
-#### 3.4.1 Standard Python Decorators (from v1.4)
+#### 3.4.1 Standard Python Decorators (existing)
 
 - `[Prop]` - `@property`
 - `[Static]` - `@staticmethod`
 - `[Class]` - `@classmethod`
 - `[Cached]` - `@cached_property`
 
-#### 3.4.2 Web Framework Decorators (from v1.4)
+#### 3.4.2 Web Framework Decorators (existing)
 
 - `[GET /path]` - GET endpoint
 - `[POST /path]` - POST endpoint
 - `[PUT /path]`, `[DELETE /path]`, etc.
 
-#### 3.4.3 Custom Decorators (from v1.4)
+#### 3.4.3 Custom Decorators (existing)
 
 - `[Auth]` - Authentication required
 - `[RateLimit:100]` - Rate limiting
@@ -402,7 +410,7 @@ See v1.4 spec for complete details.
 
 ## 4. Complete Examples
 
-### 4.1 nanoGPT with v1.5 Features
+### 4.1 nanoGPT with 0.9.0-RC1 Features
 
 ```python
 # [M:nanoGPT] [Role:Core] [Layer:Domain]
@@ -527,17 +535,17 @@ See v1.4 spec for complete details.
 
 ---
 
-## 5. Migration Guide: v1.4 → v1.5
+## 5. Migration Guide: prior releases → 0.9.0-RC1
 
 ### 5.1 Add Inheritance Information
 
-**v1.4**:
+**Previous**:
 ```python
 [C:LayerNorm]
   weight ∈ Parameter
 ```
 
-**v1.5**:
+**0.9.0-RC1**:
 ```python
 [C:LayerNorm] ◊ nn.Module
   weight ∈ Parameter
@@ -545,13 +553,13 @@ See v1.4 spec for complete details.
 
 ### 5.2 Expand Critical Nested Structures
 
-**v1.4**:
+**Previous**:
 ```python
 [C:GPT]
   transformer ∈ ModuleDict
 ```
 
-**v1.5**:
+**0.9.0-RC1**:
 ```python
 [C:GPT] ◊ nn.Module
   transformer ∈ ModuleDict {
@@ -564,25 +572,25 @@ See v1.4 spec for complete details.
 
 ### 5.3 Add Generic Types
 
-**v1.4**:
+**Previous**:
 ```python
 layers ∈ ModuleList
 ```
 
-**v1.5**:
+**0.9.0-RC1**:
 ```python
 layers ∈ ModuleList<TransformerBlock>
 ```
 
 ### 5.4 Mark Abstract Classes/Methods
 
-**v1.4**:
+**Previous**:
 ```python
 [C:BaseModel]
   # F:forward(x) → Tensor
 ```
 
-**v1.5**:
+**0.9.0-RC1**:
 ```python
 [C:BaseModel] ◊ nn.Module, ABC [Abstract]
   # F:forward(x) → Tensor [Abstract]
@@ -590,7 +598,7 @@ layers ∈ ModuleList<TransformerBlock>
 
 ---
 
-## 6. Validation Rules (v1.5)
+## 6. Validation Rules (0.9.0-RC1)
 
 ### 6.1 Inheritance Rules
 
@@ -646,15 +654,15 @@ Validators should check:
 
 ## 8. Backward Compatibility
 
-### 8.1 v1.4 → v1.5
+### 8.1 Prior releases → 0.9.0-RC1
 
-- ✅ All v1.4 files are valid v1.5 (additive changes only)
+- ✅ All prior files are valid under 0.9.0-RC1 (additive changes only)
 - ✅ New features are optional
-- ✅ Parsers should accept both v1.4 and v1.5
+- ✅ Parsers should accept both prior releases and 0.9.0-RC1
 
 ### 8.2 Deprecations
 
-None. All v1.4 features remain valid in v1.5.
+None. All prior features remain valid in 0.9.0-RC1.
 
 ---
 
@@ -673,4 +681,4 @@ None. All v1.4 features remain valid in v1.5.
 
 ---
 
-**End of Specification v1.5**
+**End of Specification 0.9.0-RC1**

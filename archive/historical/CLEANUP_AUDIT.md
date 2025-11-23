@@ -1,7 +1,7 @@
 # Repository Cleanup Audit
 
 **Date:** November 23, 2025
-**Status:** Post Gold Standard v1.5 + Ecosystem Completion
+**Status:** Post Gold Standard 0.9.0-RC1 + Ecosystem Completion
 
 ---
 
@@ -26,7 +26,7 @@ The repository has accumulated 30+ documentation files and scattered test script
 README.md                      ✓ Updated with gold standard
 GOLD_STANDARD_EXAMPLE.md       ✓ New - our showcase evidence
 ECOSYSTEM_TOOLS.md             ✓ Complete tool reference
-PYSHORTHAND_SPEC_v1.5.md      ✓ Current spec
+PYSHORTHAND_SPEC_v0.9.0-RC1.md      ✓ Current spec
 ROADMAP.md                     ? Needs review/update
 ```
 
@@ -95,7 +95,7 @@ ROADMAP.md                     ? Update with v2.0 plans
 ├── README.md                        # Updated with gold standard
 ├── GOLD_STANDARD_EXAMPLE.md         # Showcase evidence (100% accuracy)
 ├── ECOSYSTEM_TOOLS.md               # Complete 8-tool reference
-├── PYSHORTHAND_SPEC_v1.5.md        # Current language spec
+├── PYSHORTHAND_SPEC_v0.9.0-RC1.md        # Current language spec
 ├── ROADMAP.md                       # Future plans (v1.6, v2.0)
 ├── CONTRIBUTING.md                  # NEW - how to contribute
 ├── LICENSE                          # Project license
@@ -190,11 +190,11 @@ llm_quick_demo.py
 **Files:**
 ```
 PYSHORTHAND_SPEC_v1.4.md      (old)
-PYSHORTHAND_SPEC_v1.5.md      (current)
+PYSHORTHAND_SPEC_v0.9.0-RC1.md      (current)
 ```
 
 **Solution:**
-- Keep v1.5 in root
+- Keep 0.9.0-RC1 in root
 - Move v1.4 to `archive/v1.4/`
 
 ---
@@ -312,7 +312,7 @@ mv llm_demo_results.json archive/old_results/ || rm llm_demo_results.json
 - If no → keep and ensure consistency
 
 **3. ROADMAP.md**
-- Update with post-v1.5 plans
+- Update with post-0.9.0-RC1 plans
 - Add v1.6 targets (if any)
 - Add v2.0 vision
 
@@ -387,7 +387,7 @@ tests/
 ✅ README.md                      # Main entry point
 ✅ GOLD_STANDARD_EXAMPLE.md       # Showcase evidence
 ✅ ECOSYSTEM_TOOLS.md             # Tool reference
-✅ PYSHORTHAND_SPEC_v1.5.md      # Language spec
+✅ PYSHORTHAND_SPEC_v0.9.0-RC1.md      # Language spec
 ✅ ROADMAP.md                     # Future plans (update needed)
 ⚠️  ECOSYSTEM_RESULTS.md          # Review: keep or archive?
 ```
@@ -459,7 +459,7 @@ Level 1: Quick Start
 Level 2: Core References
   ├── GOLD_STANDARD_EXAMPLE.md (proof it works)
   ├── ECOSYSTEM_TOOLS.md (8 tools reference)
-  └── PYSHORTHAND_SPEC_v1.5.md (language spec)
+  └── PYSHORTHAND_SPEC_v0.9.0-RC1.md (language spec)
 
 Level 3: Detailed Guides (NEW - docs/)
   ├── getting-started.md

@@ -310,7 +310,7 @@ def analyze_results(results: list[EcosystemResult]):
     # Comparison to baseline (from previous test)
     print("Comparison to baselines:")
     print("  Full code: 35% accuracy, 5,348 tokens")
-    print("  PyShorthand v1.5: 35% accuracy, 894 tokens")
+    print("  PyShorthand 0.9.0-RC1: 35% accuracy, 894 tokens")
     print(f"  Ecosystem: {accuracy:.1f}% accuracy, {avg_total:.0f} tokens")
     print()
 

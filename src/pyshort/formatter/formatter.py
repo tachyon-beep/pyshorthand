@@ -18,7 +18,6 @@ class FormatConfig:
     align_types: bool = True
     prefer_unicode: bool = True
     sort_state_by: str = "location"  # "location", "name", "none"
-    max_line_length: int = 100
     blank_lines_around_functions: int = 1
     blank_lines_around_classes: int = 2
 
@@ -127,7 +126,7 @@ class Formatter:
     def _format_class(self, cls: Class) -> list[str]:
         """Format a class definition.
 
-        v1.5 supports:
+        0.9.0-RC1 supports:
         - [P:Name] for protocols
         - [C:List<T>] for generics
         - [C:Foo] ◊ Base1, Base2 for inheritance
@@ -135,7 +134,7 @@ class Formatter:
         """
         lines = []
 
-        # v1.5: Use P: prefix for protocols
+        # 0.9.0-RC1: Use P: prefix for protocols
         prefix = "P" if cls.is_protocol else "C"
 
         # Class declaration with optional generic parameters
@@ -145,7 +144,7 @@ class Formatter:
         else:
             lines.append(f"[{prefix}:{cls.name}]")
 
-        # v1.5: Add [Abstract] or [Protocol] tags if present
+        # 0.9.0-RC1: Add [Abstract] or [Protocol] tags if present
         tags = []
         if cls.is_abstract:
             tags.append("[Abstract]")
@@ -155,13 +154,13 @@ class Formatter:
         if tags:
             lines[-1] += " " + " ".join(tags)
 
-        # v1.5: Inheritance (◊ Base1, Base2)
+        # 0.9.0-RC1: Inheritance (◊ Base1, Base2)
         if cls.base_classes:
             bases = ", ".join(cls.base_classes)
             lines.append(f"  ◊ {bases}")
             lines.append("")
 
-        # v1.4: Dependencies (kept separate from inheritance)
+        # Legacy: Dependencies (kept separate from inheritance)
         if cls.dependencies:
             deps = ", ".join(f"[Ref:{dep.ref_id}]" for dep in cls.dependencies)
             lines.append(f"  Dependencies: {deps}")
@@ -235,7 +234,7 @@ class Formatter:
         return line
 
     def _format_tags(self, tags: list) -> str:
-        """Format tags in v1.4 grouped order.
+        """Format tags in legacy grouped order.
 
         Order: [Decorators] [HTTP Routes] [Operations] [Complexity]
 
@@ -280,7 +279,7 @@ class Formatter:
         if func.return_type:
             sig += f" → {func.return_type}"
 
-        # Add modifiers/tags (v1.4: grouped by type)
+        # Add modifiers/tags (legacy: grouped by type)
         tag_parts = []
         if func.modifiers:
             tag_parts.extend([f"[{m}]" for m in func.modifiers])
@@ -364,13 +363,13 @@ class Formatter:
             return f"{indent_str}{prefix}?"
 
         if stmt.lhs and stmt.operator and stmt.rhs:
-            # Assignment or mutation (v1.4: grouped tags)
+            # Assignment or mutation (legacy grouped tags)
             tags_str = self._format_tags(stmt.tags)
             tag_suffix = f" → {tags_str}" if tags_str else ""
             return f"{indent_str}{prefix}{stmt.lhs} {stmt.operator} {stmt.rhs}{tag_suffix}"
 
         if stmt.operator == "!!" and stmt.rhs:
-            # System mutation (v1.4: grouped tags)
+            # System mutation (legacy grouped tags)
             tags_str = self._format_tags(stmt.tags)
             tag_suffix = f" → {tags_str}" if tags_str else ""
             return f"{indent_str}{prefix}!!{stmt.rhs}{tag_suffix}"

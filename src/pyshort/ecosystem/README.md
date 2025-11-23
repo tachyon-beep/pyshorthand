@@ -9,7 +9,7 @@ The PyShorthand Ecosystem implements a **two-tier progressive disclosure system*
 
 ## Problem Statement
 
-PyShorthand v1.5 achieves:
+PyShorthand 0.9.0-RC1 achieves:
 - ✅ 100% accuracy on structural questions (5/5)
 - ✅ 83% token savings
 - ❌ Only 35% overall accuracy (7/20)
@@ -43,7 +43,7 @@ Start cheap (PyShorthand), drill down selectively (on-demand tools):
 
 ## Expected Performance
 
-| Metric | Full Code | PyShorthand v1.5 | Ecosystem |
+| Metric | Full Code | PyShorthand 0.9.0-RC1 | Ecosystem |
 |--------|-----------|------------------|-----------|
 | **Accuracy** | 35% | 35% | **80%** 🎯 |
 | **Avg Tokens** | 5,348 | 894 | **~1,400** |

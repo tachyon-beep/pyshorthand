@@ -1,6 +1,5 @@
 """Integration test for VHE canonical example."""
 
-import os
 from pathlib import Path
 
 import pytest

@@ -4,7 +4,7 @@ A comprehensive toolchain for parsing, validating, analyzing, and visualizing
 the PyShorthand Protocol - a high-density IR for LLM-optimized code analysis.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.9.0-RC1"
 __author__ = "PyShorthand Contributors"
 
 from pyshort.core.ast_nodes import (

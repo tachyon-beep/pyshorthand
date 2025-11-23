@@ -1,4 +1,4 @@
-"""A/B Testing Analysis for PyShorthand v1.4 Compression.
+"""A/B Testing Analysis for PyShorthand 0.9.0-RC1 Compression.
 
 Compares Python source files with PyShorthand decompiled output
 to measure compression ratios and validate semantic preservation.
@@ -82,7 +82,7 @@ def print_summary(all_results: dict[str, tuple]):
     print(f"  Lines:      {total_py['lines']:,}")
     print(f"  Tokens:     {total_py['tokens']:,}")
 
-    print("\nTotal PyShorthand v1.4:")
+    print("\nTotal PyShorthand 0.9.0-RC1:")
     print(f"  Characters: {total_pys['chars']:,}")
     print(f"  Lines:      {total_pys['lines']:,}")
     print(f"  Tokens:     {total_pys['tokens']:,}")

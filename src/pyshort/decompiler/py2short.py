@@ -6,15 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-@dataclass
-class InferredType:
-    """Type inference result with confidence."""
-
-    type_spec: str
-    confidence: float  # 0.0 to 1.0
-    reason: str
-
-
 class PyShorthandGenerator:
     """Generate PyShorthand from Python AST."""
 
@@ -182,7 +173,7 @@ class PyShorthandGenerator:
     def _generate_entity(self, cls: ast.ClassDef, tree: ast.Module) -> list[str]:
         """Generate PyShorthand entity from Python class.
 
-        v1.5 enhancements:
+        0.9.0-RC1 enhancements:
         - Extract base classes as inheritance (◊ notation)
         - Detect abstract classes ([Abstract] tag)
         - Detect Protocol classes ([P:Name] prefix)
@@ -200,15 +191,14 @@ class PyShorthandGenerator:
         # Check for special patterns
         is_dataclass = self._is_dataclass(cls)
         is_pydantic = self._is_pydantic_model(cls)
-        is_fastapi_route = self._is_fastapi_route_class(cls)
         web_framework = self._detect_web_framework(cls)
 
-        # v1.5: Detect abstract and protocol classes
+        # 0.9.0-RC1: Detect abstract and protocol classes
         is_abstract = self._is_abstract_class(cls)
         is_protocol = self._is_protocol_class(cls)
         generic_params = self._extract_generic_params(cls)
 
-        # v1.5: Use P: prefix for protocols
+        # 0.9.0-RC1: Use P: prefix for protocols
         prefix = "P" if is_protocol else "C"
 
         # Entity header with optional generic parameters
@@ -217,7 +207,7 @@ class PyShorthandGenerator:
         else:
             header = f"[{prefix}:{cls.name}]"
 
-        # v1.5: Add [Abstract] tag if applicable
+        # 0.9.0-RC1: Add [Abstract] tag if applicable
         if is_abstract and not is_protocol:
             header += " [Abstract]"
 
@@ -230,7 +220,7 @@ class PyShorthandGenerator:
             header += f" # {web_framework}"
         lines.append(header)
 
-        # v1.5: Extract inheritance (◊ Base1, Base2)
+        # 0.9.0-RC1: Extract inheritance (◊ Base1, Base2)
         base_classes = self._extract_base_classes(cls)
 
         if base_classes:
@@ -257,7 +247,7 @@ class PyShorthandGenerator:
                 if method.name.startswith("_") and method.name != "__init__":
                     continue  # Skip private methods except __init__
 
-                # Generate signature with v1.4 tags
+                # Generate signature with legacy tags
                 sig = self._generate_function_signature(method, indent="  # ")
                 lines.append(sig)
 
@@ -306,7 +296,7 @@ class PyShorthandGenerator:
         return dependencies
 
     def _extract_base_classes(self, cls: ast.ClassDef) -> list[str]:
-        """Extract base classes for v1.5 inheritance notation.
+        """Extract base classes for 0.9.0-RC1 inheritance notation.
 
         Args:
             cls: Python ClassDef node
@@ -344,7 +334,7 @@ class PyShorthandGenerator:
         return bases
 
     def _is_abstract_class(self, cls: ast.ClassDef) -> bool:
-        """Check if class is abstract (v1.5).
+        """Check if class is abstract (0.9.0-RC1).
 
         Args:
             cls: Python ClassDef node
@@ -371,7 +361,7 @@ class PyShorthandGenerator:
         return False
 
     def _is_protocol_class(self, cls: ast.ClassDef) -> bool:
-        """Check if class is a Protocol (v1.5).
+        """Check if class is a Protocol (0.9.0-RC1).
 
         Args:
             cls: Python ClassDef node
@@ -390,7 +380,7 @@ class PyShorthandGenerator:
         return False
 
     def _extract_generic_params(self, cls: ast.ClassDef) -> list[str]:
-        """Extract generic type parameters from class (v1.5).
+        """Extract generic type parameters from class (0.9.0-RC1).
 
         Args:
             cls: Python ClassDef node
@@ -433,14 +423,6 @@ class PyShorthandGenerator:
                     return True
             elif isinstance(base, ast.Attribute):
                 if base.attr == "BaseModel":
-                    return True
-        return False
-
-    def _is_fastapi_route_class(self, cls: ast.ClassDef) -> bool:
-        """Check if class contains FastAPI routes."""
-        for node in cls.body:
-            if isinstance(node, ast.FunctionDef):
-                if self._extract_http_route_tag(node):
                     return True
         return False
 
@@ -542,7 +524,7 @@ class PyShorthandGenerator:
         return state_vars
 
     def _generate_function_signature(self, func: ast.FunctionDef, indent: str = "") -> str:
-        """Generate function signature in PyShorthand format with v1.4 tags.
+        """Generate function signature in PyShorthand format with legacy tags.
 
         Args:
             func: Function definition node
@@ -574,7 +556,7 @@ class PyShorthandGenerator:
         # Build base signature
         sig = f"{indent}F:{func.name}({params_str}) → {return_type}"
 
-        # Extract v1.4 tags
+        # Extract legacy tags
         tags = self._extract_function_tags(func)
         if tags:
             sig += " " + " ".join(tags)
@@ -582,7 +564,7 @@ class PyShorthandGenerator:
         return sig
 
     def _extract_function_tags(self, func: ast.FunctionDef) -> list[str]:
-        """Extract all v1.4 tags for a function.
+        """Extract all legacy tags for a function.
 
         Tags are ordered: Decorator → Route → Operation → Complexity
 
@@ -977,10 +959,6 @@ class PyShorthandGenerator:
 
             # Handle List, Tuple, etc.
             if base in ("List", "list"):
-                # Try to get element type
-                if isinstance(annotation.slice, ast.Name):
-                    elem_type = self._map_python_type(annotation.slice.id)
-                    return "list"  # Just use list type without shape
                 return "list"
 
             # Handle Tensor, torch.Tensor, etc.

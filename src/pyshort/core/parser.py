@@ -171,10 +171,6 @@ class Parser:
         while self.current_token.type in (TokenType.NEWLINE, TokenType.COMMENT):
             self.advance()
 
-    def parse_metadata_value(self, value_str: str) -> str:
-        """Parse metadata value, handling special cases."""
-        return value_str.strip()
-
     def parse_metadata_header(self) -> Metadata:
         """Parse metadata header from comments.
 
@@ -225,8 +221,8 @@ class Parser:
             custom={k: v for k, v in metadata_dict.items() if k not in Metadata.__annotations__},
         )
 
-    def _is_v14_tag(self) -> bool:
-        """Check if current bracket is a v1.4 tag (not a shape parameter).
+    def _is_legacy_tag(self) -> bool:
+        """Check if current bracket is a legacy tag (not a shape parameter).
 
         Returns True if the bracket content looks like:
         - Decorator tag: Prop, Static, Class, Cached, Auth, etc.
@@ -331,7 +327,7 @@ class Parser:
 
         base_type = self.expect(TokenType.IDENTIFIER).value
 
-        # v1.5: Parse generic parameters <T, U> if present
+        # 0.9.0-RC1: Parse generic parameters <T, U> if present
         generic_params = None
         if self.current_token.type == TokenType.LT:
             self.advance()
@@ -352,7 +348,7 @@ class Parser:
                     self.advance()
             self.expect(TokenType.GT)
 
-        # v1.5: Parse nested structure { key: Type, ... } if present
+        # 0.9.0-RC1: Parse nested structure { key: Type, ... } if present
         nested_structure = None
         if self.current_token.type == TokenType.LBRACE:
             self.advance()
@@ -387,8 +383,8 @@ class Parser:
 
         shape = None
         if self.current_token.type == TokenType.LBRACKET:
-            # Check if this bracket is a shape or a v1.4 tag
-            if not self._is_v14_tag():
+            # Check if this bracket is a shape or a legacy tag
+            if not self._is_legacy_tag():
                 shape = self.parse_shape()
 
         location = None
@@ -411,8 +407,8 @@ class Parser:
             location=location,
             transfer=transfer,
             union_types=union_types,
-            generic_params=generic_params,  # v1.5
-            nested_structure=nested_structure,  # v1.5
+            generic_params=generic_params,  # 0.9.0-RC1
+            nested_structure=nested_structure,  # 0.9.0-RC1
         )
 
     def parse_reference_string(self) -> str:
@@ -454,7 +450,7 @@ class Parser:
     def parse_tag(self) -> Tag:
         """Parse a computational tag [Base:Qual1:Qual2].
 
-        Supports v1.4 tag types:
+        Supports legacy tag types:
         - [Lin:MatMul] - operation tags
         - [O(N*M)] - complexity tags
         - [Prop], [Static] - decorator tags
@@ -979,7 +975,7 @@ class Parser:
                         self.advance()  # Skip [
                         entity_prefix = self.current_token.value
 
-                        if entity_prefix in ("C", "P"):  # v1.5: P for Protocol
+                        if entity_prefix in ("C", "P"):  # 0.9.0-RC1: P for Protocol
                             try:
                                 entity = self.parse_class(line)
                                 ast.entities.append(entity)
@@ -1034,7 +1030,7 @@ class Parser:
                 elif self.current_token.type == TokenType.IDENTIFIER:
                     entity_prefix = self.current_token.value
 
-                    if entity_prefix in ("C", "P"):  # v1.5: P for Protocol
+                    if entity_prefix in ("C", "P"):  # 0.9.0-RC1: P for Protocol
                         # Class or Protocol definition
                         entity = self.parse_class(line)
                         ast.entities.append(entity)
@@ -1072,7 +1068,7 @@ class Parser:
     def parse_class(self, line: int) -> Class:
         """Parse class definition.
 
-        v1.5 supports:
+        0.9.0-RC1 supports:
         - [C:Foo] ◊ Bar, Baz - inheritance
         - [C:List<T>] - generic parameters
         - [C:Foo] [Abstract] - abstract class marker
@@ -1088,7 +1084,7 @@ class Parser:
         # Validate class name
         self.validate_identifier(name, name_token)
 
-        # v1.5: Parse generic parameters <T, U> if present
+        # 0.9.0-RC1: Parse generic parameters <T, U> if present
         generic_params = []
         if self.current_token.type == TokenType.LT:
             self.advance()
@@ -1106,7 +1102,7 @@ class Parser:
         if self.current_token.type == TokenType.RBRACKET:
             self.advance()
 
-        # v1.5: Parse [Abstract] or [Protocol] tags if present
+        # 0.9.0-RC1: Parse [Abstract] or [Protocol] tags if present
         is_abstract = False
         while self.current_token.type == TokenType.LBRACKET:
             peek = self.peek(1)
@@ -1128,7 +1124,7 @@ class Parser:
 
         self.skip_newlines()
 
-        # v1.5: Parse inheritance ◊ Base1, Base2
+        # 0.9.0-RC1: Parse inheritance ◊ Base1, Base2
         base_classes = []
         if self.current_token.type == TokenType.EXTENDS:
             self.advance()
@@ -1211,7 +1207,7 @@ class Parser:
             methods=methods,
             dependencies=dependencies,
             line=line,
-            # v1.5 fields
+            # 0.9.0-RC1 fields
             base_classes=base_classes,
             generic_params=generic_params,
             is_abstract=is_abstract,

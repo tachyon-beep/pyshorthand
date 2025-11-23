@@ -21,6 +21,9 @@ from pyshort.core.symbols import (
 )
 
 
+__all__ = ["Linter", "lint_code", "validate_file"]
+
+
 class Rule(ABC):
     """Base class for validation rules."""
 
@@ -146,10 +149,10 @@ class DimensionConsistencyRule(Rule):
 
 
 class ValidTagsRule(Rule):
-    """Ensure all tags use valid base types (v1.4 compatible)."""
+    """Ensure all tags use valid base types (legacy compatible)."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
-        """Check tag validity for both v1.3 and v1.4 tags."""
+        """Check tag validity for legacy tag sets."""
         # Check statement tags
         for stmt in ast.statements:
             yield from self._check_tags(stmt.tags, stmt.line)
@@ -168,11 +171,11 @@ class ValidTagsRule(Rule):
         """Check individual tags."""
 
         for tag in tags:
-            # v1.4 tag types don't need to match VALID_TAG_BASES
+            # Legacy tag types don't need to match VALID_TAG_BASES
             if tag.tag_type in ("complexity", "decorator", "http_route", "custom"):
                 continue
 
-            # v1.3 operation tags must match VALID_TAG_BASES
+            # Older operation tags must match VALID_TAG_BASES
             if tag.tag_type == "operation" and tag.base not in VALID_TAG_BASES:
                 yield Diagnostic(
                     severity=DiagnosticSeverity.ERROR,
@@ -185,7 +188,7 @@ class ValidTagsRule(Rule):
 
 
 class ComplexityTagValidator(Rule):
-    """Validate v1.4 complexity tag notation."""
+    """Validate legacy complexity tag notation."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check complexity tags for valid O(...) notation."""
@@ -239,7 +242,7 @@ class ComplexityTagValidator(Rule):
 
 
 class DecoratorTagValidator(Rule):
-    """Validate v1.4 decorator tags."""
+    """Validate legacy decorator tags."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check decorator tags for conflicts and validity."""
@@ -309,7 +312,7 @@ class DecoratorTagValidator(Rule):
 
 
 class HTTPRouteValidator(Rule):
-    """Validate v1.4 HTTP route tags."""
+    """Validate legacy HTTP route tags."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check HTTP route tags for validity."""
@@ -500,7 +503,7 @@ class ErrorSurfaceDocumentationRule(Rule):
 
 
 class GenericParametersValidityRule(Rule):
-    """Validate generic parameter naming (v1.5)."""
+    """Validate generic parameter naming (0.9.0-RC1)."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check generic parameters follow conventions."""
@@ -522,7 +525,7 @@ class GenericParametersValidityRule(Rule):
 
 
 class InheritanceValidityRule(Rule):
-    """Validate inheritance declarations (v1.5)."""
+    """Validate inheritance declarations (0.9.0-RC1)."""
 
     def check(self, ast: PyShortAST) -> Iterator[Diagnostic]:
         """Check base classes are valid."""
@@ -558,25 +561,17 @@ class Linter:
             ValidMetadataValuesRule(),
             DimensionConsistencyRule(),
             ValidTagsRule(),
-            ComplexityTagValidator(),  # v1.4
-            DecoratorTagValidator(),  # v1.4
-            HTTPRouteValidator(),  # v1.4
-            GenericParametersValidityRule(),  # v1.5
-            InheritanceValidityRule(),  # v1.5
+            ComplexityTagValidator(),  # legacy
+            DecoratorTagValidator(),  # legacy
+            HTTPRouteValidator(),  # legacy
+            GenericParametersValidityRule(),  # 0.9.0-RC1
+            InheritanceValidityRule(),  # 0.9.0-RC1
             SystemMutationSafetyRule(),
             CriticalOperationTaggingRule(),
             LocationInferenceRule(),
             TypeValidityRule(),
             ErrorSurfaceDocumentationRule(),
         ]
-
-    def register(self, rule: Rule) -> None:
-        """Register a custom rule.
-
-        Args:
-            rule: Validation rule to add
-        """
-        self.rules.append(rule)
 
     def check(self, ast: PyShortAST) -> list[Diagnostic]:
         """Run all rules against an AST.
