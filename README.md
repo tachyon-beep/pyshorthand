@@ -1,8 +1,6 @@
-# PyShorthand: 100% Accuracy with 8-Tool Ecosystem 🚀
+# PyShorthand: Progressive Disclosure for AI Code Understanding
 
-**Progressive Disclosure for AI Code Understanding**
-
-PyShorthand v1.5 + Ecosystem achieves **100% accuracy** (8/8 questions) using intelligent multi-tool orchestration. GPT-5.1 demonstrated perfect tool selection, calling up to 4 tools per question when needed.
+PyShorthand v1.5 + Ecosystem combines compressed notation with selective code access. In testing, the full 8-tool ecosystem achieved 100% accuracy (8/8 questions) with GPT-5.1, using intelligent multi-tool orchestration.
 
 ```
 Approach              Accuracy   Avg Tokens   Tools Used
@@ -11,10 +9,10 @@ Full Python Code:        35%      5,348       N/A
 PyShorthand v1.5:        35%        894       N/A (83% savings)
 Ecosystem (conservative):40%        267       1-2 (95% savings)
 Ecosystem (aggressive):  90%        398       2-3 (93% savings)
-Ecosystem (full tools):  100%     4,905       1-4 ✨ GOLD STANDARD
+Ecosystem (full tools):  100%     4,905       1-4
 ```
 
-**[🔥 See Gold Standard Evidence →](GOLD_STANDARD_EXAMPLE.md)** | **[Full Ecosystem Results →](ECOSYSTEM_RESULTS.md)**
+**[See Detailed Evidence →](GOLD_STANDARD_EXAMPLE.md)** | **[Full Ecosystem Documentation →](ECOSYSTEM_TOOLS.md)**
 
 ---
 
@@ -26,14 +24,14 @@ A high-density intermediate representation for Python codebases that combines:
 2. **Progressive Disclosure Ecosystem** - On-demand access to implementation details when needed
 3. **Empirical Validation** - Tested with real LLMs (GPT-5.1, Claude Sonnet 4.5) on complex questions
 
-### The Breakthrough
+### Approach
 
 Instead of choosing between "send everything" or "compress everything", the ecosystem lets AI models:
 - Start with architectural overview (PyShorthand)
 - Selectively fetch implementation details only when needed
 - Reason about what information they need to answer each question
 
-**Result:** 2.6x better accuracy than full code, using 7% of the tokens.
+**In testing:** 2.6x better accuracy than full code, using approximately 7% of the tokens.
 
 ---
 
@@ -101,7 +99,7 @@ python -m pyshorthand.ecosystem.server model.py
 | PyShorthand v1.5 | 35% | 894 | 83% | $3,930 |
 | **Ecosystem (aggressive)** | **90%** | **398** | **93%** | **$1,750** |
 
-**Savings: $16,500 per million questions while achieving 2.6x better accuracy!**
+**Estimated savings: $16,500 per million questions while achieving 2.6x better accuracy.**
 
 ### Question Breakdown
 
@@ -237,7 +235,7 @@ usages = explorer.search_usage("LayerNorm")
 └─────────────┘      └──────────────────┘
 ```
 
-**Key Innovation:** AI decides what it needs, not humans!
+**Key feature:** AI decides what information it needs based on the question.
 
 ---
 
@@ -291,13 +289,13 @@ usages = explorer.search_usage("LayerNorm")
 
 **Analysis:** Too conservative - missed opportunities to call tools
 
-### Test 3: Aggressive Prompting ⭐
+### Test 3: Aggressive Prompting
 
 **Setup:** GPT-5.1 with "call tools liberally when uncertain"
 
 **Result:** 90% accuracy, 398 tokens (93% savings)
 
-**Analysis:** Perfect balance - calls tools when needed, skips when not
+**Analysis:** Better balance - calls tools when needed, skips when not
 
 **Example Reasoning (Q8):**
 ```
@@ -318,7 +316,7 @@ Tools called:
   ✓ get_class_details(GPT)
   ✓ get_implementation(GPT.__init__)
 
-Result: ✅ Perfect answer tracing parameter through all 4 classes!
+Result: ✅ Correct answer tracing parameter through all 4 classes
 ```
 
 ---
@@ -333,7 +331,7 @@ Result: ✅ Perfect answer tracing parameter through all 4 classes!
 | PyShorthand | $3,930 | 350,000 | $11.23 |
 | **Ecosystem** | **$1,750** | **900,000** | **$1.94** |
 
-**ROI:** 26x cheaper per correct answer than full code!
+**ROI:** Approximately 26x cheaper per correct answer than full code.
 
 ### Production Deployment
 
@@ -351,7 +349,7 @@ For a codebase with 50K LOC (lines of code):
 - Cost: $0.08 per 1K queries
 - Accuracy: ~90% on complex questions
 
-**Savings:** 98% cost reduction, 2.6x better accuracy
+**Estimated savings:** 98% cost reduction, 2.6x better accuracy in testing
 
 ---
 
@@ -395,15 +393,13 @@ python experiments/diagnostic_test.py
 ## Documentation
 
 - **[Full Specification (v1.5)](PYSHORTHAND_SPEC_v1.5.md)** - Complete language reference
-- **[Ecosystem Design](PYSHORTHAND_ECOSYSTEM.md)** - Progressive disclosure architecture
-- **[Empirical Results](ECOSYSTEM_RESULTS.md)** - Detailed test results and analysis
-- **[Migration Guide](docs/migration_v1.4_to_v1.5.md)** - Upgrading from v1.4
+- **[Ecosystem Tools](ECOSYSTEM_TOOLS.md)** - 8-tool reference documentation
+- **[Gold Standard Evidence](GOLD_STANDARD_EXAMPLE.md)** - Detailed test results with GPT-5.1
+- **[Roadmap](ROADMAP.md)** - Future development plans
 
 ### Examples
 
-- **[nanoGPT](realworld_nanogpt.pys)** - 500 LOC → 120 lines PyShorthand
-- **[Diagnostic Questions](experiments/diagnostic_questions.py)** - Complex multi-file test cases
-- **[A/B Test Framework](experiments/ab_test_framework.py)** - Empirical validation methodology
+See `test_repos/` for example codebases and `experiments/` for test scripts.
 
 ---
 
@@ -485,6 +481,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Ready to save 93% on your LLM costs while improving accuracy?**
-
-[Get Started →](docs/quickstart.md) | [Read the Spec →](PYSHORTHAND_SPEC_v1.5.md) | [See the Code →](src/)
+[Read the Spec →](PYSHORTHAND_SPEC_v1.5.md) | [See the Code →](src/) | [Ecosystem Tools →](ECOSYSTEM_TOOLS.md)
