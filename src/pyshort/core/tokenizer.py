@@ -38,6 +38,7 @@ class TokenType(Enum):
     ALIAS = auto()  # ≈, REF
     CLONE = auto()  # ≜, COPY
     FOR_ALL = auto()  # ∀, FOR
+    EXTENDS = auto()  # ◊, EXTENDS (v1.5: inheritance)
 
     # Delimiters
     LPAREN = auto()  # (
@@ -460,11 +461,6 @@ class Tokenizer:
                 self.tokens.append(Token(TokenType.POWER, "**", line, col))
                 continue
 
-            # Skip decorative symbols (◊ for dependencies)
-            if char == "◊":
-                self.advance()
-                continue
-
             # Unicode operators
             unicode_map = {
                 "→": TokenType.ARROW,
@@ -481,6 +477,7 @@ class Tokenizer:
                 "≜": TokenType.CLONE,
                 "∀": TokenType.FOR_ALL,
                 "⏱": TokenType.PROFILING,
+                "◊": TokenType.EXTENDS,  # v1.5: Inheritance
             }
 
             if char in unicode_map:
@@ -535,6 +532,7 @@ class Tokenizer:
                     "REF": TokenType.ALIAS,
                     "COPY": TokenType.CLONE,
                     "FOR": TokenType.FOR_ALL,
+                    "EXTENDS": TokenType.EXTENDS,  # v1.5: Inheritance (ASCII)
                 }
 
                 if identifier in keyword_map:

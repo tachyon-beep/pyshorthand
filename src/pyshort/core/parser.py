@@ -286,6 +286,48 @@ class Parser:
 
         base_type = self.expect(TokenType.IDENTIFIER).value
 
+        # v1.5: Parse generic parameters <T, U> if present
+        generic_params = None
+        if self.current_token.type == TokenType.LT:
+            self.advance()
+            generic_params = []
+            while self.current_token.type != TokenType.GT:
+                if self.current_token.type == TokenType.IDENTIFIER:
+                    generic_params.append(self.current_token.value)
+                    self.advance()
+                elif self.current_token.type == TokenType.ARROW:
+                    # For Callable<T→U>, include the arrow
+                    generic_params.append("→")
+                    self.advance()
+                elif self.current_token.type == TokenType.COMMA:
+                    self.advance()
+                elif self.current_token.type == TokenType.EOF:
+                    raise ParseError("Unterminated generic parameters", self.current_token)
+                else:
+                    self.advance()
+            self.expect(TokenType.GT)
+
+        # v1.5: Parse nested structure { key: Type, ... } if present
+        nested_structure = None
+        if self.current_token.type == TokenType.LBRACE:
+            self.advance()
+            nested_structure = {}
+            while self.current_token.type != TokenType.RBRACE:
+                if self.current_token.type == TokenType.IDENTIFIER:
+                    key = self.current_token.value
+                    self.advance()
+                    if self.current_token.type == TokenType.COLON:
+                        self.advance()
+                        if self.current_token.type == TokenType.IDENTIFIER:
+                            value = self.current_token.value
+                            self.advance()
+                            nested_structure[key] = value
+                if self.current_token.type == TokenType.COMMA:
+                    self.advance()
+                elif self.current_token.type == TokenType.EOF:
+                    raise ParseError("Unterminated nested structure", self.current_token)
+            self.expect(TokenType.RBRACE)
+
         # Check for union types (Type1 | Type2 | Type3)
         union_types = None
         if self.current_token.type == TokenType.PIPE:
@@ -318,7 +360,15 @@ class Parser:
             else:
                 location = loc1
 
-        return TypeSpec(base_type=base_type, shape=shape, location=location, transfer=transfer, union_types=union_types)
+        return TypeSpec(
+            base_type=base_type,
+            shape=shape,
+            location=location,
+            transfer=transfer,
+            union_types=union_types,
+            generic_params=generic_params,  # v1.5
+            nested_structure=nested_structure,  # v1.5
+        )
 
     def parse_reference_string(self) -> str:
         """Parse a reference and return it as a string: [Ref:Name] → 'Ref:Name'."""
@@ -887,7 +937,7 @@ class Parser:
                         self.advance()  # Skip [
                         entity_prefix = self.current_token.value
 
-                        if entity_prefix == "C":
+                        if entity_prefix in ("C", "P"):  # v1.5: P for Protocol
                             try:
                                 entity = self.parse_class(line)
                                 ast.entities.append(entity)
@@ -935,8 +985,8 @@ class Parser:
                 elif self.current_token.type == TokenType.IDENTIFIER:
                     entity_prefix = self.current_token.value
 
-                    if entity_prefix == "C":
-                        # Class definition
+                    if entity_prefix in ("C", "P"):  # v1.5: P for Protocol
+                        # Class or Protocol definition
                         entity = self.parse_class(line)
                         ast.entities.append(entity)
                     elif entity_prefix == "F":
@@ -971,8 +1021,17 @@ class Parser:
         return ast
 
     def parse_class(self, line: int) -> Class:
-        """Parse class definition."""
-        self.expect(TokenType.IDENTIFIER)  # C
+        """Parse class definition.
+
+        v1.5 supports:
+        - [C:Foo] ◊ Bar, Baz - inheritance
+        - [C:List<T>] - generic parameters
+        - [C:Foo] [Abstract] - abstract class marker
+        - [P:Drawable] [Protocol] - protocol marker
+        """
+        entity_type = self.expect(TokenType.IDENTIFIER)  # C or P
+        is_protocol = entity_type.value == "P"
+
         self.expect(TokenType.COLON)
         name_token = self.expect(TokenType.IDENTIFIER)
         name = name_token.value
@@ -980,11 +1039,66 @@ class Parser:
         # Validate class name
         self.validate_identifier(name, name_token)
 
+        # v1.5: Parse generic parameters <T, U> if present
+        generic_params = []
+        if self.current_token.type == TokenType.LT:
+            self.advance()
+            while self.current_token.type != TokenType.GT:
+                if self.current_token.type == TokenType.IDENTIFIER:
+                    generic_params.append(self.current_token.value)
+                    self.advance()
+                if self.current_token.type == TokenType.COMMA:
+                    self.advance()
+                elif self.current_token.type == TokenType.EOF:
+                    raise ParseError("Unterminated generic parameters", self.current_token)
+            self.expect(TokenType.GT)
+
         # If using bracket syntax [C:Name], consume the closing ]
         if self.current_token.type == TokenType.RBRACKET:
             self.advance()
 
+        # v1.5: Parse [Abstract] or [Protocol] tags if present
+        is_abstract = False
+        while self.current_token.type == TokenType.LBRACKET:
+            peek = self.peek(1)
+            if peek and peek.type == TokenType.IDENTIFIER:
+                if peek.value == "Abstract":
+                    self.advance()  # [
+                    self.advance()  # Abstract
+                    self.expect(TokenType.RBRACKET)
+                    is_abstract = True
+                elif peek.value == "Protocol":
+                    self.advance()  # [
+                    self.advance()  # Protocol
+                    self.expect(TokenType.RBRACKET)
+                    is_protocol = True
+                else:
+                    break
+            else:
+                break
+
         self.skip_newlines()
+
+        # v1.5: Parse inheritance ◊ Base1, Base2
+        base_classes = []
+        if self.current_token.type == TokenType.EXTENDS:
+            self.advance()
+            while True:
+                if self.current_token.type == TokenType.IDENTIFIER:
+                    base_classes.append(self.current_token.value)
+                    self.advance()
+                    # Handle dotted names like nn.Module
+                    while self.current_token.type == TokenType.DOT:
+                        base_classes[-1] += "."
+                        self.advance()
+                        if self.current_token.type == TokenType.IDENTIFIER:
+                            base_classes[-1] += self.current_token.value
+                            self.advance()
+                if self.current_token.type == TokenType.COMMA:
+                    self.advance()
+                    continue
+                break
+            self.skip_newlines()
 
         # Parse dependencies
         dependencies = []
@@ -1042,7 +1156,16 @@ class Parser:
                 # Don't re-raise - continue building class with what we have
 
         return Class(
-            name=name, state=state, methods=methods, dependencies=dependencies, line=line
+            name=name,
+            state=state,
+            methods=methods,
+            dependencies=dependencies,
+            line=line,
+            # v1.5 fields
+            base_classes=base_classes,
+            generic_params=generic_params,
+            is_abstract=is_abstract,
+            is_protocol=is_protocol,
         )
 
 
