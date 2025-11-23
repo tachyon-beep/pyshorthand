@@ -1,0 +1,55 @@
+# [M:applications] [Role:Core]
+
+[C:FastAPI]
+  ◊ [Ref:Starlette]
+  debug ∈ Unknown
+  title ∈ Unknown
+  summary ∈ Unknown
+  description ∈ Unknown
+  version ∈ Unknown
+  terms_of_service ∈ Unknown
+  contact ∈ Unknown
+  license_info ∈ Unknown
+  openapi_url ∈ Unknown
+  openapi_tags ∈ Unknown
+  root_path_in_servers ∈ Unknown
+  docs_url ∈ Unknown
+  redoc_url ∈ Unknown
+  swagger_ui_oauth2_redirect_url ∈ Unknown
+  swagger_ui_init_oauth ∈ Unknown
+  swagger_ui_parameters ∈ Unknown
+  separate_input_output_schemas ∈ Unknown
+  openapi_external_docs ∈ Unknown
+  extra ∈ Unknown
+  openapi_version ∈ Unknown
+  openapi_schema ∈ Unknown?
+  webhooks ∈ Unknown
+  state ∈ Unknown
+  dependency_overrides ∈ Unknown
+  router ∈ Unknown
+  exception_handlers ∈ Unknown
+  user_middleware ∈ list
+  middleware_stack ∈ ASGIApp?
+
+  # Methods:
+  # F:__init__() → Unknown
+  # F:build_middleware_stack() → ASGIApp [Iter] [O(N)]
+  # F:openapi() → Unknown [IO:Disk]
+  # F:setup() → Unknown [IO:Disk]
+  # F:add_api_route(path: str, endpoint: Unknown) → Unknown [O(1)]
+  # F:api_route(path: str) → Unknown
+  # F:add_api_websocket_route(path: str, endpoint: Unknown, name: str?) → Unknown [O(1)]
+  # F:websocket(path: Unknown, name: Unknown) → Unknown
+  # F:include_router(router: Unknown) → Unknown
+  # F:get(path: Unknown) → Unknown
+  # F:put(path: Unknown) → Unknown
+  # F:post(path: Unknown) → Unknown
+  # F:delete(path: Unknown) → Unknown
+  # F:options(path: Unknown) → Unknown
+  # F:head(path: Unknown) → Unknown
+  # F:patch(path: Unknown) → Unknown
+  # F:trace(path: Unknown) → Unknown
+  # F:websocket_route(path: str, name: str?) → Unknown
+  # F:on_event(event_type: Unknown) → Unknown [deprecated]
+  # F:middleware(middleware_type: Unknown) → Unknown
+  # F:exception_handler(exc_class_or_status_code: Unknown) → Unknown

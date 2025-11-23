@@ -1,0 +1,66 @@
+# [M:Full definition of a GPT Language Model, all of it in this single file] [Role:Core]
+
+[C:LayerNorm]
+  weight ∈ Unknown
+  bias ∈ Unknown
+
+  # Methods:
+  # F:__init__(ndim, bias) → Unknown
+  # F:forward(input) → Unknown [O(1)]
+
+[C:CausalSelfAttention]
+  c_attn ∈ Linear
+  c_proj ∈ Linear
+  attn_dropout ∈ Dropout
+  resid_dropout ∈ Dropout
+  n_head ∈ Unknown
+  n_embd ∈ Unknown
+  flash ∈ Unknown
+
+  # Methods:
+  # F:__init__(config) → Unknown
+  # F:forward(x) → Unknown
+
+[C:MLP]
+  c_fc ∈ Linear
+  gelu ∈ Unknown
+  c_proj ∈ Linear
+  dropout ∈ Dropout
+
+  # Methods:
+  # F:__init__(config) → Unknown
+  # F:forward(x) → Unknown
+
+[C:Block]
+  ln_1 ∈ [Ref:LayerNorm]
+  attn ∈ [Ref:CausalSelfAttention]
+  ln_2 ∈ [Ref:LayerNorm]
+  mlp ∈ [Ref:MLP]
+
+  # Methods:
+  # F:__init__(config) → Unknown
+  # F:forward(x) → Unknown
+
+[C:GPTConfig] # @dataclass
+  block_size ∈ i32  # default: 1024
+  vocab_size ∈ i32  # default: 50304
+  n_layer ∈ i32  # default: 12
+  n_head ∈ i32  # default: 12
+  n_embd ∈ i32  # default: 768
+  dropout ∈ f32  # default: 0.0
+  bias ∈ bool  # default: True
+
+[C:GPT]
+  config ∈ Unknown
+  transformer ∈ Unknown
+  lm_head ∈ Linear
+
+  # Methods:
+  # F:__init__(config) → Unknown [Iter] [O(N)]
+  # F:get_num_params(non_embedding) → Unknown
+  # F:forward(idx, targets) → Unknown [Iter] [O(N)]
+  # F:crop_block_size(block_size) → Unknown [Iter] [O(N)]
+  # F:from_pretrained(cls, model_type, override_args) → Unknown [Class] [Iter] [O(N)]
+  # F:configure_optimizers(weight_decay, learning_rate, betas, device_type) → Unknown
+  # F:estimate_mfu(fwdbwd_per_iter, dt) → Unknown
+  # F:generate(idx, max_new_tokens, temperature, top_k) → Unknown [no_grad] [Iter] [O(N)]

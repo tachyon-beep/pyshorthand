@@ -1,0 +1,43 @@
+# [M:Full definition of a GPT Language Model, all of it in this single file] [Role:Core]
+
+[C:NewGELU]
+  # No typed attributes found
+
+  # Methods:
+  # F:forward(x) → Unknown [O(1)]
+
+[C:CausalSelfAttention]
+  c_attn ∈ Linear
+  c_proj ∈ Linear
+  attn_dropout ∈ Dropout
+  resid_dropout ∈ Dropout
+  n_head ∈ Unknown
+  n_embd ∈ Unknown
+
+  # Methods:
+  # F:__init__(config) → Unknown
+  # F:forward(x) → Unknown
+
+[C:Block]
+  ln_1 ∈ Norm
+  attn ∈ [Ref:CausalSelfAttention]
+  ln_2 ∈ Norm
+  mlp ∈ Unknown
+  mlpf ∈ Unknown
+
+  # Methods:
+  # F:__init__(config) → Unknown
+  # F:forward(x) → Unknown
+
+[C:GPT]
+  block_size ∈ Unknown
+  transformer ∈ Unknown
+  lm_head ∈ Linear
+
+  # Methods:
+  # F:get_default_config() → Unknown [Static]
+  # F:__init__(config) → Unknown [Iter] [O(N)]
+  # F:from_pretrained(cls, model_type) → Unknown [Class] [Iter] [O(N)]
+  # F:configure_optimizers(train_config) → Unknown [Iter:Nested] [O(N²)]
+  # F:forward(idx, targets) → Unknown [Iter] [O(N)]
+  # F:generate(idx, max_new_tokens, temperature, do_sample, top_k) → Unknown [no_grad] [Iter] [O(N)]
