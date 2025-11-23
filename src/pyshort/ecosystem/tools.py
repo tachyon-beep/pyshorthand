@@ -5,6 +5,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass
 
+# Import context pack and execution flow analyzers
+try:
+    from ..analyzer.context_pack import ContextPackGenerator, ContextPack
+    from ..analyzer.execution_flow import ExecutionFlowTracer, ExecutionFlow
+    from ..decompiler.py2short import PyShorthandGenerator
+    from ..core.parser import parse as parse_pyshorthand
+    _ADVANCED_TOOLS_AVAILABLE = True
+except ImportError:
+    _ADVANCED_TOOLS_AVAILABLE = False
+    ContextPack = None
+    ExecutionFlow = None
+
 
 @dataclass
 class MethodImplementation:
@@ -228,6 +240,247 @@ class CodebaseExplorer:
                             usages.append(f"{parent} (instantiation)")
 
         return usages
+
+    def get_context_pack(
+        self, target: str, max_depth: int = 2, include_peers: bool = True
+    ) -> Optional[Dict]:
+        """Get dependency context pack with F0/F1/F2 layers and neighbors.
+
+        This returns a dependency-aware context pack showing:
+        - F0: The target entity itself
+        - F1: Direct dependencies (callers + callees)
+        - F2: 2-hop dependencies
+        - Class peers: Other methods in same class
+        - Related state: State variables accessed
+
+        Args:
+            target: Entity name to analyze (class or function)
+            max_depth: Maximum dependency depth (1=F1 only, 2=F1+F2)
+            include_peers: Include class peer methods
+
+        Returns:
+            Dictionary with context pack data, or None if advanced tools unavailable
+
+        Example:
+            >>> explorer = CodebaseExplorer("model.py")
+            >>> pack = explorer.get_context_pack("GPT.forward", max_depth=2)
+            >>> print(pack["f1_immediate"])  # Direct dependencies
+            ['Block', 'LayerNorm', 'Embedding']
+            >>> print(pack["f2_extended"])  # 2-hop dependencies
+            ['CausalSelfAttention', 'MLP']
+        """
+        if not _ADVANCED_TOOLS_AVAILABLE:
+            return None
+
+        # First need to convert Python to PyShorthand module
+        pyshorthand_module = self._get_pyshorthand_module()
+        if not pyshorthand_module:
+            return None
+
+        # Generate context pack
+        generator = ContextPackGenerator()
+        pack = generator.generate_context_pack(
+            pyshorthand_module, target, max_depth, include_peers
+        )
+
+        if pack:
+            return pack.to_dict()
+        return None
+
+    def trace_execution(
+        self, entry_point: str, max_depth: int = 10, follow_calls: bool = True
+    ) -> Optional[Dict]:
+        """Trace execution flow through function calls.
+
+        Shows the runtime call path, variables in scope, and call graph.
+
+        Args:
+            entry_point: Function/method to start tracing from
+            max_depth: Maximum call depth to trace
+            follow_calls: If True, recursively trace into function calls
+
+        Returns:
+            Dictionary with execution flow data, or None if unavailable
+
+        Example:
+            >>> explorer = CodebaseExplorer("model.py")
+            >>> flow = explorer.trace_execution("GPT.forward", max_depth=5)
+            >>> print(flow["execution_path"])
+            [
+                {"depth": 0, "entity": "GPT.forward", "calls": ["Block.forward"]},
+                {"depth": 1, "entity": "Block.forward", "calls": ["LayerNorm", "CausalSelfAttention"]},
+                ...
+            ]
+        """
+        if not _ADVANCED_TOOLS_AVAILABLE:
+            return None
+
+        # Get PyShorthand module
+        pyshorthand_module = self._get_pyshorthand_module()
+        if not pyshorthand_module:
+            return None
+
+        # Trace execution
+        tracer = ExecutionFlowTracer()
+        flow = tracer.trace_execution(
+            pyshorthand_module, entry_point, max_depth, follow_calls
+        )
+
+        if flow:
+            return flow.to_dict()
+        return None
+
+    def get_neighbors(self, symbol: str) -> Optional[Dict[str, List[str]]]:
+        """Get direct neighbors (callers + callees) of an entity.
+
+        This is a simplified version of get_context_pack that only returns
+        F1 (immediate dependencies) in both directions.
+
+        Args:
+            symbol: Entity name to get neighbors for
+
+        Returns:
+            Dict with 'callees' (what this calls) and 'callers' (what calls this)
+
+        Example:
+            >>> explorer = CodebaseExplorer("model.py")
+            >>> neighbors = explorer.get_neighbors("Block.forward")
+            >>> print(neighbors["callees"])
+            ['LayerNorm', 'CausalSelfAttention', 'MLP']
+            >>> print(neighbors["callers"])
+            ['GPT.forward']
+        """
+        pack_data = self.get_context_pack(symbol, max_depth=1, include_peers=False)
+        if not pack_data:
+            return None
+
+        return {
+            "callees": pack_data.get("f1_immediate", []),
+            "callers": [],  # Would need reverse dependency analysis
+            "peers": pack_data.get("class_peers", []),
+        }
+
+    def get_module_pyshorthand(self) -> Optional[str]:
+        """Get entire module in PyShorthand format.
+
+        Returns the full PyShorthand representation of the entire codebase,
+        showing all classes, functions, and their relationships.
+
+        Returns:
+            PyShorthand formatted string, or None if unavailable
+
+        Example:
+            >>> explorer = CodebaseExplorer("model.py")
+            >>> pyshorthand = explorer.get_module_pyshorthand()
+            >>> print(pyshorthand)
+            # [M:model] [Role:Core]
+
+            [C:GPT] ◊ nn.Module
+              config ∈ GPTConfig
+              transformer ∈ ModuleDict {...}
+              F:forward(idx, targets) → (Tensor, Tensor?)
+            ...
+        """
+        if not _ADVANCED_TOOLS_AVAILABLE:
+            return None
+
+        # Read all Python files
+        all_pyshorthand = []
+
+        for file_path in self._get_python_files():
+            try:
+                with open(file_path) as f:
+                    source = f.read()
+
+                tree = ast.parse(source)
+                generator = PyShorthandGenerator()
+                pyshorthand = generator.generate(tree, str(file_path))
+                all_pyshorthand.append(f"# File: {file_path.name}\n{pyshorthand}")
+            except Exception:
+                continue
+
+        if all_pyshorthand:
+            return "\n\n".join(all_pyshorthand)
+        return None
+
+    def get_class_pyshorthand(self, class_name: str) -> Optional[str]:
+        """Get a single class in PyShorthand format.
+
+        Returns just the PyShorthand representation of one class,
+        including all its methods, state variables, and structure.
+
+        Args:
+            class_name: Name of class to get
+
+        Returns:
+            PyShorthand formatted string for the class, or None if not found
+
+        Example:
+            >>> explorer = CodebaseExplorer("model.py")
+            >>> ps = explorer.get_class_pyshorthand("GPT")
+            >>> print(ps)
+            [C:GPT] ◊ nn.Module
+              config ∈ GPTConfig
+              transformer ∈ ModuleDict {
+                wte: Embedding(50304, 768),
+                wpe: Embedding(1024, 768),
+                h: ModuleList<Block>[12]
+              }
+              F:forward(idx, targets) → (Tensor, Tensor?)
+              F:generate(idx, max_new_tokens) → Tensor [no_grad]
+        """
+        if not _ADVANCED_TOOLS_AVAILABLE:
+            return None
+
+        # Find the class in source files
+        for file_path in self._get_python_files():
+            tree = self._get_ast(file_path)
+            if tree is None:
+                continue
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and node.name == class_name:
+                    # Generate PyShorthand for just this class
+                    try:
+                        with open(file_path) as f:
+                            source = f.read()
+
+                        # Parse full file to get context
+                        full_tree = ast.parse(source)
+                        generator = PyShorthandGenerator()
+
+                        # Generate for full module, then extract class
+                        full_pyshorthand = generator.generate(full_tree, str(file_path))
+
+                        # Extract just the class section
+                        # Look for [C:ClassName] pattern
+                        import re
+                        class_pattern = rf'\[C:{class_name}\].*?(?=\n\[C:|$)'
+                        match = re.search(class_pattern, full_pyshorthand, re.DOTALL)
+
+                        if match:
+                            return match.group(0).strip()
+                    except Exception:
+                        continue
+
+        return None
+
+    def _get_pyshorthand_module(self):
+        """Internal: Convert Python files to PyShorthand module for analysis."""
+        if not _ADVANCED_TOOLS_AVAILABLE:
+            return None
+
+        # Get full PyShorthand representation
+        pyshorthand_str = self.get_module_pyshorthand()
+        if not pyshorthand_str:
+            return None
+
+        try:
+            # Parse PyShorthand into module AST
+            module = parse_pyshorthand(pyshorthand_str)
+            return module
+        except Exception:
+            return None
 
     # Private methods
 
