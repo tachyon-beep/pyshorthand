@@ -3,7 +3,7 @@
 import ast
 import pytest
 
-from src.pyshort.decompiler.py2short import PyShorthandGenerator
+from src.pyshort.decompiler.py2short import PyShorthandGenerator, decompile
 
 
 class TestDecoratorTagExtraction:
@@ -523,3 +523,34 @@ async def fetch_data():
         assert "[GET /data]" in sig
         assert "[IO:Async]" in sig
         assert "[O(1)]" in sig
+
+
+class TestUnionTypeSupport:
+    """Test proper handling of Union type annotations."""
+
+    def test_union_type_multiple_types(self):
+        """Union with multiple types should show all types."""
+        source = '''
+from typing import Union
+
+def process(value: Union[int, str, float]) -> Union[bool, None]:
+    pass
+'''
+        result = decompile(source)
+
+        # Should represent the union with all types (mapped to PyShorthand types)
+        # Union[int, str, float] → i32|str|f32
+        assert "i32|str|f32" in result or "int|str|float" in result
+
+    def test_optional_type_preserved(self):
+        """Optional[X] should render as X? not just X."""
+        source = '''
+from typing import Optional
+
+def get_name() -> Optional[str]:
+    pass
+'''
+        result = decompile(source)
+
+        # Optional[str] should be str?
+        assert "str?" in result

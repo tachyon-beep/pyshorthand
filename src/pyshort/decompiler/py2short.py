@@ -949,12 +949,20 @@ class PyShorthandGenerator:
                             if inner_type in self.local_classes:
                                 return f"[Ref:{inner_type}]?"
                             return f"{self._map_python_type(inner_type)}?"
-                # General Union (not Optional pattern) - just use first type for now
-                # TODO: Add proper Union type support
+                # General Union (not Optional pattern) - represent all types
                 if isinstance(annotation.slice, ast.Tuple) and annotation.slice.elts:
-                    first_type = annotation.slice.elts[0]
-                    if isinstance(first_type, ast.Name):
-                        return self._map_python_type(first_type.id)
+                    # Build union representation: type1|type2|type3
+                    type_parts = []
+                    for type_node in annotation.slice.elts:
+                        if isinstance(type_node, ast.Name):
+                            mapped = self._map_python_type(type_node.id)
+                            type_parts.append(mapped)
+                        elif isinstance(type_node, ast.Constant) and type_node.value is None:
+                            continue  # Skip None in union (handled by Optional)
+                        else:
+                            type_parts.append("Unknown")
+                    if type_parts:
+                        return "|".join(type_parts)
                 return "Unknown"
 
             # Handle List, Tuple, etc.
